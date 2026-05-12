@@ -2,17 +2,17 @@
 
 Source-of-truth for the slides + Google Docs that hold the lecture and lab content.
 
-_Last regenerated: 2026-05-12 (post title_only length audit fixes — 36 cell/bullet trims across Mods 1, 3, 4, 5, 7, 8)_
+_Last regenerated: 2026-05-12 (post 23-violation length-fix round — auditor patched 3x: title_only + code-budget + content/objectives/summary bullets)_
 
 ---
 
-## Module slides (Google Slides) — 8 decks, 106 slides, 210 min
+## Module slides (Google Slides) — 8 decks, 107 slides, 210 min
 
 | Mod | Title | Slides | Min | URL |
 |---|---|---|---|---|
 | 1 | Pipeline Architecture & Service Catalog | 15 | 30 | https://docs.google.com/presentation/d/1OSOAvY_tOajsd68L3G3b4imqkVZmDSnHN6s1T_ojDBY/edit |
 | 2 | Anatomy of a Pipeline Run — Using S3 | 8 | 15 | https://docs.google.com/presentation/d/1quGoyrbmMwBsLT6uy1cHvTs4uZpzHu74Mk33nYDMh2s/edit |
-| 3 | EKS Deployment Pipelines | 20 | 40 | https://docs.google.com/presentation/d/1AXyLyZs7U-lNiQJLHK6RIKQsZqi4uXnjg2n_wQ5iOnI/edit |
+| 3 | EKS Deployment Pipelines | 21 | 40 | https://docs.google.com/presentation/d/1AXyLyZs7U-lNiQJLHK6RIKQsZqi4uXnjg2n_wQ5iOnI/edit |
 | 4 | Lambda Deployment Pipelines | 10 | 20 | https://docs.google.com/presentation/d/19rHA8IEJIGEkdMfdfG8fGh42FYzF5ZuEtbQh763n2js/edit |
 | 5 | Aurora Schema Migrations via Pipelines | 10 | 20 | https://docs.google.com/presentation/d/1dMadHvR3YZLUYKtR0Zi8jJqGNhlSGl9EbaPVA4-hv84/edit |
 | 6 | Policy-as-Code with OPA | 16 | 30 | https://docs.google.com/presentation/d/1ADFv7kCk2y4W3BB59YbfhsKbc3QmhJMNHPjW0DTC12c/edit |
