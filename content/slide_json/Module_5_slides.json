@@ -1,0 +1,167 @@
+{
+  "metadata": {
+    "title": "Chapter 5: Aurora Schema Migrations via Pipelines",
+    "module_number": 5,
+    "course_name": "IO-107: SDLC Pipeline and Deployment Guardrails",
+    "duration_minutes": 20,
+    "total_modules": 8,
+    "template": "roi_syf"
+  },
+  "slides": [
+    {
+      "layout": "title",
+      "subtitle": "Chapter 5:\nAurora Schema Migrations via Pipelines",
+      "title": "IO-107: SDLC Pipeline and Deployment Guardrails"
+    },
+    {
+      "layout": "objectives",
+      "title": "Chapter Objectives",
+      "bullets": [
+        "In this chapter, you will:",
+        "Explain why schema changes are stateful and require pipeline-driven control",
+        "Describe how SQL migrations apply through CodeBuild",
+        "Use the env.secrets-manager pattern for Flyway credentials",
+        "Preview the Aurora Blue/Green Terraform workflow you will exercise in Lab 4"
+      ]
+    },
+    {
+      "layout": "title_only",
+      "title": "Chapter Concepts",
+      "table": {
+        "headers": [],
+        "rows": [
+          [
+            "Why Schema Changes Are Different"
+          ],
+          [
+            "The Migration Pattern"
+          ],
+          [
+            "Secrets Manager + Flyway"
+          ],
+          [
+            "Aurora Blue/Green via Terraform — Lab 4 Preview"
+          ]
+        ]
+      },
+      "highlight_row": 0
+    },
+    {
+      "layout": "content",
+      "title": "Schema Changes Are Stateful — Rollbacks Are Hard",
+      "bullets": [
+        "Deploy a bad Lambda? Roll back in seconds — stateless",
+        "Run an ALTER TABLE that drops a column? That data is gone",
+        "Add a NOT NULL column without a default? All inserts start failing",
+        "Manual SQL via a client = no audit trail, no reproducibility",
+        "Financial data demands the strictest change control"
+      ],
+      "speaker_notes": "Open with the framing: schema changes are fundamentally different from application deployments because they touch persistent data. A bad Lambda is a 30-second alias flip back to the previous version. A bad ALTER TABLE that drops a column is gone — the data does not come back. Adding a NOT NULL column without a default value silently breaks every INSERT until you fix it. And someone connecting to production with a SQL client and running commands manually is the worst case: no review, no audit trail, no way to reproduce the change in another environment. For financial data that is unacceptable. This is why every schema change goes through the pipeline. The pipeline gives you version control on the SQL, the same migration runs in dev, staging, and production, and there is a complete record of every change."
+    },
+    {
+      "layout": "title_only",
+      "title": "How Schema Changes Are Handled",
+      "callout_boxes": [
+        {
+          "header": "Infrastructure side",
+          "bullets": [
+            "Terraform changes the RDS/Aurora cluster",
+            "Pipeline picks it up: plan, OPA, approval, apply",
+            "Engine version, parameter group, topology"
+          ],
+          "position": "left"
+        },
+        {
+          "header": "Schema side",
+          "bullets": [
+            "SQL files (V1__..., V2__...) in the app repo",
+            "CodeBuild runs flyway info -> migrate -> info",
+            "Forward-fix is the default rollback model"
+          ],
+          "position": "right"
+        }
+      ],
+      "speaker_notes": "This is the pattern end to end. The infrastructure side — engine version, parameter group, cluster topology — is managed by Terraform. When you commit a Terraform change to the RDS/Aurora cluster, the same pipeline shape you already know picks it up: build, OPA, approval, apply. The schema side — DDL changes — lives as SQL files in your application repository, named with the Flyway convention so they apply in order. A CodeBuild stage runs flyway info to show current state, flyway migrate to apply pending changes, and flyway info again to confirm. For rollback, the default is forward-fix: if V3 caused a problem, you deploy V4 to fix it. Forward-fix preserves the migration history and is easier to reason about than undo migrations, which have data-loss limitations of their own. (The no-direct-access rule applies on top — we close the module on that.)"
+    },
+    {
+      "layout": "code",
+      "title": "Flyway in CodeBuild — The Secrets Manager Pattern",
+      "code": "env:\n  secrets-manager:\n    FLYWAY_URL: \"prod/mydb/url\"\n    FLYWAY_USER: \"prod/mydb/username\"\n    FLYWAY_PASSWORD: \"prod/mydb/password\"\n\nphases:\n  install:\n    commands:\n      - wget -qO- \\\n          https://.../flyway-commandline.tar.gz \\\n          | tar xvz\n  build:\n    commands:\n      - flyway info\n      - flyway migrate\n      - flyway info",
+      "speaker_notes": "This is the only Flyway buildspec slide in the module — and it's the one that matters because it's the security-correct pattern Lab 4 uses end to end. Notice what is NOT on the command line: no -url, no -user, no -password flags. CodeBuild's env.secrets-manager block pulls the values from AWS Secrets Manager at the start of the build and injects them as environment variables. Flyway natively reads FLYWAY_URL, FLYWAY_USER, and FLYWAY_PASSWORD from the environment — no flag mapping needed. Result: the password never appears on a command line. It is not in ps output, it is not in CodeBuild's per-command log captures, it is not in the buildspec file in git. It only exists in the build process's environment block. Compare this to the alternative — pulling secrets with aws secretsmanager get-secret-value, parsing with jq, exporting manually, then passing on the flyway command line. Every step there is a leak risk. env.secrets-manager is shorter AND safer. This is the pattern Lab 4 exercises."
+    },
+    {
+      "layout": "title_only",
+      "title": "Flyway Commands Used in the Pipeline",
+      "table": {
+        "headers": [
+          "Command",
+          "When the Pipeline Runs It"
+        ],
+        "rows": [
+          [
+            "flyway info",
+            "Before migrate — shows what is pending"
+          ],
+          [
+            "flyway migrate",
+            "Build stage — applies pending V-files in order"
+          ],
+          [
+            "flyway info",
+            "After migrate — confirms success and final state"
+          ]
+        ]
+      },
+      "speaker_notes": "Three commands. That is the entire Flyway surface you need for the pipeline. flyway info first — shows the current state of the flyway_schema_history table and which migrations are pending. flyway migrate — applies the pending V-files in version order. flyway info again — confirms the final state. The build log captures all three, which becomes your audit trail. Other Flyway commands exist (baseline, validate, repair) but you won't run them in the pipeline — those are platform-team operations for fixing history-table issues or onboarding an existing database, and they happen out-of-band with security approval. Treat the pipeline as info/migrate/info, full stop."
+    },
+    {
+      "layout": "content",
+      "title": "Aurora Blue/Green via Terraform — Lab 4 Preview",
+      "bullets": [
+        "Lab 4: you change one Terraform attribute on the Aurora cluster",
+        "aws_rds_cluster resource gains a blue_green_update block",
+        "Pipeline picks up the Terraform change — plan, OPA, approval, apply",
+        "Aurora creates the green cluster, logical replication keeps it in sync",
+        "Switchover under a minute typically; only proceeds when lag is zero",
+        "You observe blue + green clusters and the switchover in AWS CloudTrail"
+      ],
+      "speaker_notes": "This slide sets up Lab 4. The blue/green pattern is how Aurora handles schema changes that would normally lock tables for minutes or hours — like adding an index to a billion-row table — without taking the application down. Conceptually: Aurora creates a green copy of your production cluster, logical replication keeps green in sync with blue, you apply schema changes to green while blue keeps serving traffic, then you switchover and green becomes the new blue. What makes this *our* pattern is that you do not call the AWS RDS APIs directly. You modify Terraform — specifically the aws_rds_cluster resource gets a blue_green_update block — and commit. The pipeline does the rest: terraform plan, OPA validates the change, approval gate for production, terraform apply. Aurora then orchestrates the green cluster creation, sync, and switchover. One realistic-expectation note: switchover is typically under a minute for low-write workloads, but for write-heavy clusters it can be longer because Aurora only proceeds once replication lag has reached zero. Plan for that window. In Lab 4 you will make this Terraform change yourself and watch the switchover event land in CloudTrail."
+    },
+    {
+      "layout": "title_only",
+      "title": "No Direct Database Access",
+      "cards": [
+        {
+          "header": "Standing access",
+          "header_color": "blue",
+          "items": [
+            "No standing credentials to production DBs",
+            "All schema changes flow through the pipeline",
+            "No exceptions for senior engineers"
+          ]
+        },
+        {
+          "header": "Emergency access",
+          "header_color": "green",
+          "items": [
+            "Requires security team approval",
+            "Session is recorded end to end",
+            "Audit trail feeds the post-incident review"
+          ]
+        }
+      ],
+      "speaker_notes": "Close the module by reinforcing the access model. Nobody on the engineering teams has standing credentials to connect a SQL client to a production Aurora cluster. That is by design and it is non-negotiable for financial data. Every schema change goes through the pipeline, which means every change is reviewed, OPA-validated, approval-gated, and CloudTrail-logged. Emergency access does exist for real outage scenarios — for example, when you need to read production state to diagnose an active incident. But it requires security team approval, the session is recorded, and the audit trail becomes part of the post-incident review. Frame this for students: the audit trail is not a bureaucratic hurdle, it is the compliance evidence regulators look at. The pipeline pattern gives you that evidence automatically; the emergency-access pattern gives you that evidence with extra friction so it stays rare."
+    },
+    {
+      "layout": "summary",
+      "title": "Chapter Summary",
+      "bullets": [
+        "In this chapter, you have:",
+        "Explained why schema changes are stateful and require pipeline-driven control",
+        "Described how SQL migrations apply through CodeBuild",
+        "Used the env.secrets-manager pattern to keep passwords off command lines",
+        "Previewed the Aurora Blue/Green Terraform workflow for Lab 4"
+      ]
+    }
+  ]
+}

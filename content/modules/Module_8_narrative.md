@@ -1,0 +1,281 @@
+# Module 8: Troubleshooting and Course Wrap-up — Teaching Narrative
+
+**Duration:** 30 minutes (trimmed from 45 min per v3 outline; absorbs Mod 9 wrap-up content)
+
+---
+
+## Opening (2 minutes)
+
+"Now we get practical. You've learned about pipelines, deployments, OPA policies, SCPs, and Config rules. But what happens when things go wrong? And they will go wrong — that's not failure, that's the guardrails doing their job.
+
+This chapter teaches you how to troubleshoot pipeline failures systematically. When your deployment doesn't work, you need to know: Is it an OPA policy violation? An SCP denial? A tagging issue? An IAM permission problem? Or something specific to EKS, Lambda, or databases?
+
+We'll also use this final chapter to close the course — recap what you can now do, point you at internal resources, and walk the exception request workflow."
+
+[SLIDE: Chapter 8 - Troubleshooting and Course Wrap-up]
+
+---
+
+## Module Objectives (2 minutes)
+
+[SLIDE: Chapter Objectives]
+- Diagnose pipeline failures by stage and error signature
+- Investigate SCP denials using AWS CloudTrail
+- Recognise EKS, Lambda, and database failure patterns
+- Navigate the exception request workflow and course resources
+
+---
+
+## Section 1: Systematic Diagnosis (6 minutes)
+
+[SLIDE: Chapter Concepts — Systematic Troubleshooting]
+
+[SLIDE: Troubleshooting Framework — Which Stage, Which Layer]
+
+| Stage Failed | Likely Layer | Where to Look First |
+|---|---|---|
+| Build (OPA) | Policy violation | Conftest FAIL output |
+| Deploy — AccessDenied + SCP | Org SCP | CloudTrail event |
+| Deploy — AccessDenied + 'not authorized' | IAM | Pipeline role policy |
+| Deploy — tag mismatch | Tag policy | Organizations tag policy report |
+| Post-deploy (runtime) | EKS/Lambda/DB | Service-specific logs |
+
+"Every pipeline failure starts with the same question: which stage failed? The pipeline visualization tells you that immediately. Once you know the stage, the error message tells you which guardrail layer is involved.
+
+Build-stage failures are almost always OPA — read the Conftest FAIL output and fix the Terraform.
+
+Deploy-stage failures need careful reading: `AccessDenied` plus 'service control policy' means an SCP blocked the API call, `AccessDenied` plus 'not authorized' means an IAM gap on the pipeline role, and a tag-value error means the tag policy rejected an invalid value.
+
+Post-deploy failures (the pipeline succeeded but the app doesn't work) drop you into service-specific troubleshooting — Kubernetes events, Lambda CloudWatch logs, Flyway/Aurora logs.
+
+This table is the mental model for the rest of the chapter."
+
+[SLIDE: AWS CloudTrail for SCP-Deny Investigation]
+```json
+{
+  "eventName": "CreateBucket",
+  "errorCode": "AccessDenied",
+  "errorMessage": "User: arn:aws:sts::...
+     :assumed-role/pipeline-role/build-12345
+     is not authorized to perform: s3:CreateBucket
+     with an explicit deny in a service
+     control policy",
+  "awsRegion": "eu-west-1",
+  "userIdentity": { "type": "AssumedRole", ... }
+}
+```
+
+"When you see `AccessDenied` at the deploy stage, CloudTrail is where you confirm it's an SCP. Search CloudTrail for the `eventName` (here, `CreateBucket`) and the assumed-role session ID from the pipeline log.
+
+The `errorCode` will be `AccessDenied`. The `errorMessage` is the diagnostic gold: 'with an explicit deny in a service control policy' is the SCP signature — you cannot fix this by changing IAM. The `awsRegion` field tells you whether it's the region-restriction SCP firing (here, `eu-west-1`, which is blocked).
+
+If the message says 'is not authorized to perform' WITHOUT the SCP phrase, it's an IAM gap on the pipeline role and the fix is different — update the role policy.
+
+Always copy the full CloudTrail event into the exception request if you decide to file one — it's the evidence the platform team needs."
+
+---
+
+## Section 2: Failure Signatures (6 minutes)
+
+[SLIDE: Chapter Concepts — Failure Signatures]
+
+[SLIDE: OPA FAIL Line Anatomy]
+```
+FAIL - tfplan.json - main -
+  Resource 'aws_s3_bucket.myapp_data'
+  missing required tag: CostCenter
+
+# Parts of the line:
+#  FAIL           = severity
+#  tfplan.json    = input file
+#  main           = Rego package
+#  Resource '...' = which resource
+#  missing ...    = which rule fired
+```
+
+"Every Conftest FAIL line follows the same shape, and once you know the parts you can scan a 30-line output in seconds.
+
+`FAIL` is the severity — warnings exist too but they don't block. The filename is whatever you pointed conftest at — usually `tfplan.json`. The Rego package (here, `main`) tells you which policy file the rule lives in — useful when you need to read the rule. Then the message: which resource address triggered the rule, and which condition fired.
+
+From this single line you know: it's an OPA-stage failure, in the tagging category, on resource `aws_s3_bucket.myapp_data`, specifically missing `CostCenter`. Fix in Terraform: add the `CostCenter` tag in the resource block. Push, re-run, done."
+
+[SLIDE: SCP and Tag-Policy Error Signatures]
+
+**SCP Region Denial**
+- Stage: deploy
+- Error: `AccessDenied` + 'service control policy'
+- Region in error message is not us-east-1 or us-west-2
+- Fix: change region or request SCP exception
+
+**Tag Policy Denial**
+- Stage: deploy (after API call)
+- Error: 'tags did not match required values'
+- Tag was present but value not in allowed list
+- Fix: use canonical value (dev/stg/prd, etc.)
+
+"Two signatures students confuse the most.
+
+**SCP region denial** happens at deploy stage. Error contains both `AccessDenied` and 'explicit deny in a service control policy'. The `awsRegion` in the CloudTrail event will be a region outside us-east-1/us-west-2. Fix: change the region in Terraform, or if you genuinely need that region, request an SCP exception (Lab 3 scenario).
+
+**Tag policy denial** is also deploy stage. Error says 'tags did not match required values for tag key X'. Note the difference from OPA — the tag was PRESENT (so OPA passed), but the value wasn't in the allowed list. Common case: someone typed `Environment=test` instead of `Environment=dev`. Fix: use the canonical value from the tag policy. Don't try to bypass — the canonical values exist for cost allocation and ownership reporting."
+
+---
+
+## Section 3: Compute and Database Failures (8 minutes)
+
+[SLIDE: Chapter Concepts — Compute and Database Failures]
+
+[SLIDE: Lambda Failure Example — Package Size]
+- Error: 'Unzipped size must be smaller than 262144000 bytes' (250 MB)
+- Also: 'RequestEntityTooLargeException' = 50 MB zipped direct-upload limit
+- Diagnose: look at deployment package contents before failing
+- Fix: move large dependencies to Lambda Layers
+- Fix: SAM uploads via S3 automatically — reaches 250 MB ceiling
+
+"Lambda has TWO size limits and students hit them in different ways.
+
+The 250 MB unzipped limit is the function ceiling — everything in the deployment package after extraction.
+
+The 50 MB zipped limit applies only to direct `UpdateFunctionCode` uploads. If a developer sees `RequestEntityTooLargeException`, that's the 50 MB direct-upload limit — the fix is to upload via S3, which SAM does automatically through `sam package`. To reach 250 MB you must use the S3 path.
+
+The 'too big' error itself usually means: large native dependencies (pandas, numpy, ML libraries), or accidentally including dev dependencies, or bundling test fixtures. Solution: Lambda Layers for shared dependencies, exclude dev deps in your build, and check what's actually in the zip with `unzip -l`.
+
+This is the most common Lambda CI failure pattern, so it's worth memorising."
+
+[SLIDE: EKS Failure Example — IRSA Misconfiguration]
+
+1. **Symptom** — Pod gets AccessDenied when calling AWS APIs
+2. **SA Annotation** — `kubectl get sa -o yaml` — is `eks.amazonaws.com/role-arn` present?
+3. **Trust Policy** — Namespace and SA name in condition must match exactly
+4. **Token Injection** — `AWS_WEB_IDENTITY_TOKEN_FILE` env var present in pod?
+5. **Role Permissions** — Does the IAM role grant the action being denied?
+
+"IRSA — IAM Roles for Service Accounts — is the most common EKS failure mode. The symptom is a pod getting `AccessDenied` when it calls an AWS API (S3, KMS, Secrets Manager).
+
+The diagnostic walk:
+- First, does the service account have the `eks.amazonaws.com/role-arn` annotation? `kubectl get sa <name> -n <ns> -o yaml` will show you.
+- Second, does the IAM role's trust policy condition exactly match the namespace and service account name? Common bug: namespace `prod` in the trust policy but the pod runs in namespace `production`.
+- Third, did the IRSA mutating webhook actually inject `AWS_WEB_IDENTITY_TOKEN_FILE` into the pod? If not, the SDK can't assume the role.
+- Fourth, even if all that's correct, the IAM role's permission policy must grant the action being denied — IRSA only gets you the role; the role still needs the right policies.
+
+Walk these four checks in order and you'll catch 95% of IRSA failures."
+
+[SLIDE: Database Failure Example — Connection]
+- Error: 'Flyway failed: unable to obtain connection'
+- Check 1: is the pipeline (CodeBuild) inside the right VPC?
+- Check 2: does the DB security group allow CodeBuild's SG?
+- Check 3: correct cluster writer endpoint vs reader endpoint?
+- Check 4: are Secrets Manager credentials current and reachable?
+
+"Database connection failures usually look like 'Flyway failed: unable to obtain connection' or 'TCP/IP connection to host failed'. The Aurora cluster is in a private subnet, so CodeBuild can't reach it from the default public networking.
+
+Four checks:
+- CodeBuild must run with VPC config pointing at the same VPC as the database.
+- The database security group must allow ingress from CodeBuild's security group on the DB port — this is the most common miss because the default DB SG only allows internal application traffic, not the build SG.
+- Endpoint matters: Aurora has separate writer and reader endpoints, and migration tools must connect to the writer.
+- Secrets Manager: if rotation has run and credentials are stale, or if CodeBuild can't reach Secrets Manager (network or IAM), the connection attempt fails before it even hits the DB.
+
+Walk these in order. For Aurora Blue/Green (Lab 4), there's an additional consideration — the writer endpoint switches at promotion, so connections that survive the cutover need retry logic."
+
+---
+
+## Section 4: Exception Workflow and Course Wrap-up (6 minutes)
+
+[SLIDE: Chapter Concepts — Exceptions and Course Wrap-up]
+
+[SLIDE: Exception Request Workflow]
+
+1. **When to Request** — Guardrail blocks legitimate change — not for skipping security
+2. **Document Evidence** — Pipeline log + CloudTrail event showing the denial
+3. **Justify and Scope** — Business reason + narrowest possible exception scope
+4. **Submit and Track** — Via the enterprise ticketing system to security/platform team
+5. **Outcomes** — Approve / partial approve with conditions / deny
+
+"Sometimes a guardrail is doing exactly what it's designed to do, but your use case is genuinely legitimate. That's what the exception process is for.
+
+It is NOT for avoiding security — 'I don't want encryption' is not an exception case. 'EU customer requires data residency in eu-west-1' is.
+
+The process: document the blocked deployment with the pipeline log and CloudTrail event you captured. Explain the business justification clearly. Describe the narrowest possible scope — one bucket in one region for one app, not 'allow eu-west-1 broadly'. Submit through the enterprise ticketing system. Security and platform teams review and approve, partially approve with conditions, or deny.
+
+The clearer the request, the faster the review. Don't try to bypass the guardrail through other means — that's a finding, not a workaround. Exceptions become part of the audit trail and are reviewed periodically."
+
+[SLIDE: Deployment Validation and Compliance Reporting]
+- Pipeline success != app health — validate post-deploy
+- EKS: `kubectl rollout status` + readiness probes + smoke test
+- Lambda: invoke + CloudWatch error rate
+- AWS Config: continuous drift detection on live resources
+- Compliance dashboards aggregate Config results across all accounts
+
+"Brief on what happens AFTER your pipeline goes green, because pipeline success doesn't mean the app works.
+
+For EKS, validation is `kubectl rollout status` (waits for the deployment to settle), checking readiness probes report ready, and running a smoke test against the service endpoint.
+
+For Lambda, invoke the function with a test payload and check CloudWatch error rate — particularly important during alias-based traffic shifting from Chapter 4.
+
+AWS Config from Chapter 7 is your continuous validation layer — it catches drift if anyone bypasses the pipeline.
+
+Compliance dashboards aggregate Config across all accounts and surface trends — which rules have the most violations, which accounts are drifting, which teams need help. These dashboards are visibility, not punishment — they help platform and security spot patterns and improve policies. We won't deep-dive the dashboards today; the internal runbook has the link and access process."
+
+[SLIDE: Course Wrap-up — What You Can Now Do]
+
+**You Can Now**
+- Trace a Terraform commit through Jenkins, CodePipeline, OPA, deploy
+- Read CodeBuild logs and identify the failed stage
+- Recognise OPA, SCP, tag-policy, and IRSA signatures
+- Deploy EKS, Lambda, and Aurora Blue/Green via pipeline
+
+**Where to Go Next**
+- Internal pipeline runbooks (linked in wiki)
+- OPA policy repository — read the rules that block you
+- Platform team channel for exception requests
+- Service Catalog browser for approved Terraform products
+
+"Recap of the day. By now you can describe the pipeline architecture — Service Catalog product, Terraform commit, Jenkins or CloudBees, CodePipeline, OPA validation, manual approval for stg/prd, CodeDeploy or kubectl/helm for the actual deploy.
+
+You can read a CodeBuild log and a CodePipeline visualization to find the failing stage. You can recognise the four major failure signatures: OPA FAIL line, SCP `AccessDenied` with the SCP phrase, IAM `AccessDenied` without it, tag policy invalid-value, and IRSA misconfig on EKS.
+
+You can deploy containers to EKS with Helm and IRSA, serverless to Lambda with SAM and alias traffic shifting, and trigger Aurora Blue/Green by editing Terraform.
+
+For what's next: internal runbooks have the organisation-specific details we couldn't put in this course (account numbers, real endpoints, the actual exception ticketing system). The OPA policy repo is where you read the rules when one blocks you — understanding why a rule exists is faster than guessing. Platform team channel for exceptions and policy improvement requests. And the Service Catalog browser shows you which Terraform products you can pull from — that's where every change should start."
+
+---
+
+## Course Summary (2 minutes)
+
+[SLIDE: Course Summary]
+- Mapped the SDLC pipeline from Service Catalog to deployed workload
+- Deployed EKS, Lambda, and Aurora Blue/Green through the pipeline
+- Recognised OPA, SCP, tag-policy, and IAM denial signatures
+- Navigated the exception request workflow and internal resources
+
+"Thanks for spending the day. The pipeline is the path — when you push Terraform from an approved Service Catalog product, everything else (build, OPA, approval, deploy) runs on rails. When something blocks you, you now have the mental model to know which rail you're stuck on and what to do about it.
+
+Any final questions?"
+
+---
+
+## Instructor Notes
+
+**Key Points to Emphasize:**
+- Read the error message first — it usually tells you what's wrong
+- SCP denials vs IAM denials: look for the phrase 'service control policy'
+- IRSA failures are the most common EKS issue — walk the four checks
+- Don't re-run failed migrations without understanding the state first
+
+**Common Questions:**
+- "How do I know if it's SCP or IAM?" — The 'service control policy' phrase in the error message
+- "What if I can't figure it out?" — Platform team channel; that's what they're for
+- "How long do exception requests take?" — Depends on complexity and scope; plan ahead
+
+**Demo Idea (if time allows):**
+- Show a CloudTrail event from a recent SCP deny in the training environment
+- Point out the errorMessage field and the awsRegion field
+- Walk how that event would be attached to an exception request
+
+**Timing Notes:**
+- Opening: 2 min
+- Objectives: 2 min
+- Systematic Diagnosis (incl. CloudTrail): 6 min
+- Failure Signatures: 6 min
+- Compute + DB Failures: 8 min
+- Exceptions + Wrap-up + Resources: 6 min — **Total: ~30 min** on target

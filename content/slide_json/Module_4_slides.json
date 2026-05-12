@@ -1,0 +1,151 @@
+{
+  "metadata": {
+    "title": "Chapter 4: Lambda Deployment Pipelines",
+    "module_number": 4,
+    "course_name": "IO-107: SDLC Pipeline and Deployment Guardrails",
+    "duration_minutes": 20,
+    "total_modules": 8,
+    "template": "roi_syf"
+  },
+  "slides": [
+    {
+      "layout": "title",
+      "subtitle": "Chapter 4:\nLambda Deployment Pipelines",
+      "title": "IO-107: SDLC Pipeline and Deployment Guardrails"
+    },
+    {
+      "layout": "objectives",
+      "title": "Chapter Objectives",
+      "bullets": [
+        "In this chapter, you will:",
+        "Deploy serverless applications using AWS SAM through CodeBuild pipelines",
+        "Implement Lambda versioning and alias strategies for safe deployments",
+        "Configure traffic shifting for canary and linear deployments",
+        "Recognise the caveats that silently bypass traffic shifting"
+      ]
+    },
+    {
+      "layout": "title_only",
+      "title": "Chapter Concepts",
+      "table": {
+        "headers": [],
+        "rows": [
+          [
+            "AWS SAM Deployments"
+          ],
+          [
+            "Lambda Versioning and Aliases"
+          ],
+          [
+            "Traffic Shifting and Auto-Rollback"
+          ],
+          [
+            "Deployment Caveats"
+          ]
+        ]
+      },
+      "highlight_row": 0
+    },
+    {
+      "layout": "content",
+      "title": "Serverless — Deployed via SAM",
+      "bullets": [
+        "Event-driven workloads: S3, SQS, Kinesis, EventBridge, API Gateway",
+        "Not for long-running processes (15-minute limit) — use EKS instead",
+        "Standard: AWS SAM templates deployed by CodeBuild",
+        "SAM extends CloudFormation with serverless-specific shorthand",
+        "Same pipeline shape as everything else: build, OPA, approval, deploy"
+      ],
+      "speaker_notes": "Lambda is for event-driven workloads — something happens and Lambda runs code in response. If your process runs more than 15 minutes or needs persistent connections, use EKS instead. For deployment, the standard is AWS SAM. SAM extends CloudFormation with simplified syntax for serverless resources — one resource type expands into the Lambda function, IAM role, and event sources. SAM also gives you sam local for laptop-side testing before pushing. The pipeline shape is the same as everything else we've covered: source, build, OPA validation, approval, deploy."
+    },
+    {
+      "layout": "code",
+      "title": "SAM Template — Function with Traffic Shifting",
+      "code": "AWSTemplateFormatVersion: '2010-09-09'\nTransform: AWS::Serverless-2016-10-31\n\nGlobals:\n  Function:\n    Timeout: 30\n    Runtime: python3.11\n    MemorySize: 256\n\nResources:\n  MyFunction:\n    Type: AWS::Serverless::Function\n    Properties:\n      CodeUri: src/\n      Handler: app.handler\n      AutoPublishAlias: prod\n      DeploymentPreference:\n        Type: Canary10Percent5Minutes",
+      "speaker_notes": "This is the smallest SAM template that does something interesting. The Transform line tells CloudFormation to process this as a SAM template. Globals sets defaults — 30-second timeout, Python 3.11, 256 MB memory — that any function inherits. The function itself uses Type AWS::Serverless::Function, which expands into a Lambda function plus IAM role plus event sources, about 50 lines of raw CloudFormation under the hood. The two lines that matter for safe deployment are AutoPublishAlias and DeploymentPreference. AutoPublishAlias creates the prod alias and updates it on every deploy. DeploymentPreference controls how traffic shifts to the new version — we'll cover the shifting types in two slides."
+    },
+    {
+      "layout": "code",
+      "title": "Build and Deploy in CodeBuild",
+      "code": "# buildspec.yml\nphases:\n  install:\n    commands: [ pip install aws-sam-cli ]\n  build:\n    commands:\n      - sam build\n      - sam package \\\n          --output-template-file packaged.yaml \\\n          --s3-bucket $ARTIFACT_BUCKET\n  post_build:\n    commands:\n      - sam deploy \\\n          --template-file packaged.yaml \\\n          --stack-name $STACK_NAME \\\n          --capabilities CAPABILITY_IAM \\\n          --no-fail-on-empty-changeset",
+      "speaker_notes": "The install phase installs the SAM CLI (pin a specific runtime version in real CodeBuild images). The build phase runs sam build (compile + dependencies) and sam package (upload code to S3, produce a packaged template). The post_build runs sam deploy against the packaged template. Two callouts. First: CAPABILITY_IAM only ACKNOWLEDGES that the template creates IAM resources — it does NOT grant permissions. The pipeline role's own IAM policy (which itself is reviewed) constrains what those resources can do, and SCPs apply on top. CAPABILITY_IAM is an acknowledgement, not a grant. Second: no-fail-on-empty-changeset prevents the build from failing on re-runs when nothing changed. In real templates, --parameter-overrides Environment=$ENVIRONMENT passes per-environment values into template parameters — log level, VPC settings, memory."
+    },
+    {
+      "layout": "content",
+      "title": "Lambda Versions and Aliases",
+      "bullets": [
+        "$LATEST is mutable — changes every deploy",
+        "Published versions are immutable snapshots (1, 2, 3, ...)",
+        "Alias = named pointer to a version (e.g., prod -> version 5)",
+        "Deploy new code -> publish version N -> update alias to N",
+        "Rollback = update alias back to version N-1"
+      ],
+      "speaker_notes": "By default, when you update a Lambda function you update $LATEST, which is mutable. But you can publish a version, which creates an immutable snapshot. Once version 1 exists, its code never changes. Aliases are named pointers to a specific version. The prod alias might point to version 5. When you deploy version 6 and verify it works, you update prod to point to version 6. If something goes wrong, you flip prod back to version 5. That alias flip IS your rollback — no redeploy needed. This is why event sources — API Gateway, SQS triggers, S3 triggers — should always reference the alias ARN, not the function ARN or $LATEST. The alias is the stable contract."
+    },
+    {
+      "layout": "title_only",
+      "title": "Traffic Shifting Types",
+      "table": {
+        "headers": [
+          "Type",
+          "Behaviour"
+        ],
+        "rows": [
+          [
+            "Canary10Percent5Minutes",
+            "10% for 5 min, then 100%"
+          ],
+          [
+            "Canary10Percent30Minutes",
+            "10% for 30 min, then 100%"
+          ],
+          [
+            "Linear10PercentEvery1Minute",
+            "10% increase every minute"
+          ],
+          [
+            "AllAtOnce",
+            "Immediate 100% shift (dev only)"
+          ]
+        ]
+      },
+      "speaker_notes": "Canary shifts a small percentage of traffic to the new version, waits, then completes. Linear gradually increases traffic over time. AllAtOnce is immediate and is only appropriate for dev environments. Production deployments typically use Canary10Percent5Minutes or slower — we want time to detect issues. The slower the shift, the more invocations you get to observe new-version error rates and latency before all traffic moves over. Pair this with CloudWatch alarms on the alias: if the canary alarm fires during the shift window, CodeDeploy automatically rolls the alias back to the previous version. That auto-rollback is the whole reason canary shifting exists — catch a bad deploy with 10% blast radius, not 100%."
+    },
+    {
+      "layout": "title_only",
+      "title": "Deployment Caveats — What Bypasses Shifting",
+      "callout_boxes": [
+        {
+          "header": "Bypass risks",
+          "bullets": [
+            "Unqualified function ARN invokes skip alias weights",
+            "Explicit :$LATEST invokes go straight to newest code",
+            "AuthType: NONE on Function URLs blocked by OPA"
+          ],
+          "position": "left"
+        },
+        {
+          "header": "Other limits",
+          "bullets": [
+            "ZIP + layers must stay under 250 MB total",
+            "Need bigger? Container image packaging (up to 10 GB)",
+            "CAPABILITY_IAM acknowledges, does not grant"
+          ],
+          "position": "right"
+        }
+      ],
+      "speaker_notes": "These are the gotchas that bite teams in production. First and most important: traffic shifting only applies to invokes that hit the alias ARN. If a caller hits the unqualified function ARN or explicitly invokes :$LATEST, the shifting weights are bypassed entirely — that caller goes straight to $LATEST, silently making your canary an all-at-once deploy for them. That is why we enforce 'always reference the alias' as a deployment rule. Second: OPA policy blocks AuthType: NONE on Function URLs for any non-public namespace. Either use AWS_IAM or front the URL with an authorizer. NONE is for intentionally-public webhooks only. Third: the ZIP + Layers limit is 250 MB unzipped. If your function genuinely needs more — large ML models, bundled binaries — switch to Lambda container-image packaging instead. Container images support up to 10 GB; layers are not the right escape hatch. Fourth, repeating from the buildspec slide: CAPABILITY_IAM is an acknowledgement that the template creates IAM, not a grant of permission to do anything."
+    },
+    {
+      "layout": "summary",
+      "title": "Chapter Summary",
+      "bullets": [
+        "In this chapter, you have:",
+        "Deployed serverless applications using AWS SAM through CodeBuild pipelines",
+        "Implemented Lambda versioning and alias strategies for safe deployments",
+        "Configured canary and linear traffic shifting with auto-rollback",
+        "Identified the caveats that silently bypass traffic shifting"
+      ]
+    }
+  ]
+}

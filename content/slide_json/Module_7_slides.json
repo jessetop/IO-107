@@ -1,0 +1,211 @@
+{
+  "metadata": {
+    "title": "Chapter 7: SCPs, Tagging Guardrails and AWS Config Rules",
+    "module_number": 7,
+    "course_name": "IO-107: SDLC Pipeline and Deployment Guardrails",
+    "duration_minutes": 25,
+    "total_modules": 8,
+    "template": "roi_syf"
+  },
+  "slides": [
+    {
+      "layout": "title",
+      "subtitle": "Chapter 7:\nSCPs, Tagging Guardrails and AWS Config Rules",
+      "title": "IO-107: SDLC Pipeline and Deployment Guardrails"
+    },
+    {
+      "layout": "objectives",
+      "title": "Chapter Objectives",
+      "bullets": [
+        "In this chapter, you will:",
+        "Explain how SCPs restrict actions within AWS accounts",
+        "Recognise the three main SCP categories",
+        "Identify the mandatory tags and tag policy enforcement",
+        "Understand AWS Config rules as the detective compliance layer"
+      ]
+    },
+    {
+      "layout": "title_only",
+      "title": "Chapter Concepts",
+      "table": {
+        "headers": [],
+        "rows": [
+          [
+            "Service Control Policies (SCPs)"
+          ],
+          [
+            "Mandatory Tags and Tag Policies"
+          ],
+          [
+            "AWS Config as Detective Control"
+          ],
+          [
+            "Failure-Stage Signatures"
+          ]
+        ]
+      },
+      "highlight_row": 0
+    },
+    {
+      "layout": "title_only",
+      "title": "Service Control Policies in AWS Organizations",
+      "table": {
+        "headers": [
+          "Aspect",
+          "Detail"
+        ],
+        "rows": [
+          [
+            "JSON in AWS Organizations",
+            "Attached to OUs or individual accounts"
+          ],
+          [
+            "Set Maximum Permissions",
+            "Define the ceiling — cannot grant, only restrict"
+          ],
+          [
+            "Apply to All Principals",
+            "Including root, admins, and pipeline roles"
+          ],
+          [
+            "Intersection Logic",
+            "Effective perms = IAM Allow INTERSECT SCP Allow"
+          ]
+        ]
+      },
+      "speaker_notes": "SCPs are attached to organizational units or individual accounts in AWS Organizations. They define the maximum permissions any principal in that account can have. Even with Administrator access, if an SCP denies an action, you cannot perform it. The key distinction: SCPs don't grant permissions -- IAM policies do that. SCPs restrict what permissions are effective. Think of it as a ceiling -- your IAM permissions can go up to that ceiling but never through it. Effective permissions are the intersection of IAM Allow and SCP Allow. If IAM grants but SCP denies, the result is deny. If SCP allows but IAM doesn't grant, the result is also deny. Both must allow for an action to succeed. This applies to pipeline execution roles too -- your CodeBuild service role is subject to SCPs just like a human user."
+    },
+    {
+      "layout": "code",
+      "title": "Region Restriction SCP",
+      "code": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [{\n    \"Sid\": \"DenyOutsideApprovedRegions\",\n    \"Effect\": \"Deny\",\n    \"NotAction\": [\n      \"iam:*\", \"cloudfront:*\", \"route53:*\",\n      \"support:*\", \"organizations:*\",\n      \"sts:GetCallerIdentity\"\n    ],\n    \"Resource\": \"*\",\n    \"Condition\": {\n      \"StringNotEquals\": {\n        \"aws:RequestedRegion\": [\"us-east-1\", \"us-west-2\"]\n      }\n    }\n  }]\n}",
+      "speaker_notes": "This SCP restricts actions to approved regions -- us-east-1 and us-west-2. Any attempt to create resources in other regions will be denied. This addresses data residency requirements and simplifies our operational footprint. Critical detail: aws:RequestedRegion does NOT evaluate for global services -- IAM, CloudFront, Route 53, Organizations, STS in non-regional mode, AWS Support. Without the NotAction carve-out shown here, this SCP locks the account out of IAM itself and breaks everything. A real region-restriction SCP must include this NotAction list -- iam:*, cloudfront:*, route53:*, support:*, organizations:*, sts:GetCallerIdentity, and a few others. Don't deploy a region SCP without that carve-out."
+    },
+    {
+      "layout": "content",
+      "title": "Service Restriction SCP",
+      "bullets": [
+        "Effect: Deny on Action list (braket:*, gamelift:*, groundstation:*, ...)",
+        "Even with IAM permission, the API call is rejected",
+        "Reduces attack surface and prevents shadow IT",
+        "The real list covers every service outside the approved portfolio",
+        "Need a blocked service? Request via platform team, not bypass"
+      ],
+      "speaker_notes": "This SCP denies specific AWS services that aren't in the approved portfolio. The structure is simple: Effect Deny on an Action list, Resource star. Even if someone has IAM permissions for GameLift, the SCP blocks the API call before it gets evaluated. This reduces attack surface and prevents shadow IT with unapproved services. A real service-restriction SCP is longer -- it lists every service outside the approved portfolio (which you saw in Chapter 1: EKS, Lambda, S3, RDS, Aurora, plus a handful of supporting services like KMS, CloudWatch, IAM, Secrets Manager). If you need a service that's currently blocked, work with the platform team rather than try to bypass it."
+    },
+    {
+      "layout": "code",
+      "title": "Root Account Protection SCP",
+      "code": "{\n  \"Sid\": \"ProtectRootAccount\",\n  \"Effect\": \"Deny\",\n  \"Action\": \"*\",\n  \"Resource\": \"*\",\n  \"Condition\": {\n    \"StringLike\": {\n      \"aws:PrincipalArn\": \"arn:aws:iam::*:root\"\n    }\n  },\n  \"NotAction\": [\n    \"iam:CreateVirtualMFADevice\",\n    \"iam:EnableMFADevice\",\n    \"sts:GetSessionToken\"\n  ]\n}",
+      "speaker_notes": "The root account is too powerful to use for regular operations. This SCP denies almost all actions for the root user, except setting up MFA. Root should only be used for the handful of account-recovery scenarios that genuinely require it -- closing the account, changing root email, certain billing operations. Day-to-day work happens through federated roles with appropriate scope. If you see root used in CloudTrail, that's an incident signal."
+    },
+    {
+      "layout": "title_only",
+      "title": "Chapter Concepts",
+      "table": {
+        "headers": [],
+        "rows": [
+          [
+            "Service Control Policies (SCPs)"
+          ],
+          [
+            "Mandatory Tags and Tag Policies"
+          ],
+          [
+            "AWS Config as Detective Control"
+          ],
+          [
+            "Failure-Stage Signatures"
+          ]
+        ]
+      },
+      "highlight_row": 1
+    },
+    {
+      "layout": "title_only",
+      "title": "Mandatory Tags and Tag Policy Enforcement",
+      "table": {
+        "headers": [
+          "Tag",
+          "Purpose",
+          "Example Values"
+        ],
+        "rows": [
+          [
+            "Environment",
+            "Lifecycle stage",
+            "dev, stg, prd"
+          ],
+          [
+            "Application",
+            "Application name",
+            "payment-api"
+          ],
+          [
+            "Owner",
+            "Responsible team email",
+            "platform-team@client.com"
+          ],
+          [
+            "CostCenter",
+            "Financial code",
+            "CC-12345"
+          ],
+          [
+            "DataClass",
+            "Data sensitivity",
+            "public, internal, confidential"
+          ]
+        ]
+      },
+      "speaker_notes": "These five tags are required on all taggable resources. Missing any of them will fail the OPA policy check from Chapter 6 -- that's the build-stage enforcement. There's also a second enforcement layer: tag policies in AWS Organizations. Tag policies define the canonical tag keys and the allowed values. Unlike OPA which runs before deployment, tag policies apply continuously. If someone manages to bypass the pipeline (which they shouldn't) and creates a resource with Environment=test instead of dev/stg/prd, tag policies flag it in the Organizations console. So you get pre-deploy enforcement from OPA and post-deploy enforcement from tag policies -- defence in depth on the same requirement."
+    },
+    {
+      "layout": "content",
+      "title": "AWS Config — The Detective Layer",
+      "bullets": [
+        "Continuously records resource configurations",
+        "Evaluates each resource against Config rules",
+        "Marks resources COMPLIANT or NON_COMPLIANT in real time",
+        "Catches drift: manual changes, role assumption, console edits",
+        "Key rules: encryption, public access, required tags"
+      ],
+      "speaker_notes": "AWS Config is the post-deployment compliance layer -- the detective control after OPA's preventive layer and tag policies' organizational layer. Config continuously records the configuration of every resource in scope. Config rules evaluate those configurations against desired states -- s3-bucket-server-side-encryption-enabled, rds-storage-encrypted, eks-cluster-log-enabled, required-tags, and others. Each resource is marked COMPLIANT or NON_COMPLIANT. This catches drift -- if someone bypasses the pipeline and makes a manual change (which they shouldn't), or a role gets assumed and a setting flipped, Config detects it. AWS provides managed rules for common checks; the platform team also maintains custom rules backed by Lambda for organisation-specific requirements. Remediation can be manual or automated via Systems Manager documents -- auto-remediation is used carefully because changing resources automatically can have unintended consequences in production."
+    },
+    {
+      "layout": "title_only",
+      "title": "Failure-Stage Signatures",
+      "callout_boxes": [
+        {
+          "header": "Build Stage",
+          "bullets": [
+            "OPA: Conftest FAIL — missing tags, naming, encryption",
+            "Fix in Terraform, push, re-run pipeline"
+          ],
+          "position": "left"
+        },
+        {
+          "header": "Deploy Stage",
+          "bullets": [
+            "AccessDenied + 'service control policy' = SCP",
+            "AccessDenied + 'not authorized' = IAM",
+            "Tag-policy violation: invalid value (not just missing)"
+          ],
+          "position": "right"
+        }
+      ],
+      "speaker_notes": "This is the punchline of the whole guardrails picture -- where each layer surfaces a failure. Build stage failures are OPA: the Conftest FAIL output you saw in Chapter 6 -- missing tags, naming violations, encryption resources absent. Fix the Terraform, push, re-run. Deploy stage failures look different. SCP denials show AccessDenied plus 'explicit deny in a service control policy' -- the SCP blocked the API call. IAM denials show AccessDenied plus 'not authorized' -- the pipeline role lacks the permission. Tag-policy violations at deploy time show 'tags did not match required values' -- this is the canonical-case/allowed-value check from the tag policy, not OPA. And then post-deploy, AWS Config will mark resources NON_COMPLIANT if something drifts. Recognising which layer fired tells you immediately where to look in Chapter 8."
+    },
+    {
+      "layout": "summary",
+      "title": "Chapter Summary",
+      "bullets": [
+        "In this chapter, you have:",
+        "Explained how SCPs create hard limits on account capabilities",
+        "Recognised the three main SCP categories (region, service, root)",
+        "Identified the mandatory tags and tag policy enforcement",
+        "Understood AWS Config as the detective compliance layer"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,100 @@
+{
+  "metadata": {
+    "title": "Chapter 2: Anatomy of a Pipeline Run — Using S3",
+    "module_number": 2,
+    "course_name": "IO-107: SDLC Pipeline and Deployment Guardrails",
+    "duration_minutes": 15,
+    "total_modules": 8,
+    "template": "roi_syf"
+  },
+  "slides": [
+    {
+      "layout": "title",
+      "subtitle": "Chapter 2:\nAnatomy of a Pipeline Run — Using S3",
+      "title": "IO-107: SDLC Pipeline and Deployment Guardrails"
+    },
+    {
+      "layout": "objectives",
+      "title": "Chapter Objectives",
+      "bullets": [
+        "In this chapter, you will:",
+        "Trace a Terraform-to-S3 change through every stage of the pipeline",
+        "Locate the artifacts (plan output, OPA result, build log) each stage produces",
+        "Identify the standards baked into the Service Catalog S3 product",
+        "Preview the failure scenarios deep-dived in Modules 6–8"
+      ]
+    },
+    {
+      "layout": "title_only",
+      "title": "Anatomy of a Pipeline Run — S3 Example",
+      "table": {
+        "headers": ["Stage", "What it does", "Where the output lives"],
+        "rows": [
+          ["1. Commit", "Dev launches S3 Service Catalog product → Terraform commit", "App Git repo"],
+          ["2. Build", "CodeBuild runs `terraform plan`, saves plan JSON", "CloudWatch Logs + S3 artifact"],
+          ["3. OPA validation", "Conftest checks naming, tags, encryption, BPA, TLS", "Build log: PASS / FAIL lines"],
+          ["4. Approval (stg/prd)", "Human reviews plan, clicks approve", "Pipeline action history"],
+          ["5. Deploy", "Cross-account role assumed; `terraform apply`", "CloudWatch Logs + AWS account"]
+        ]
+      },
+      "speaker_notes": "Walk through this top to bottom. Stage 1: developer launches the Service Catalog S3 product with parameters (env, app name, owner, cost centre) — the product expands to compliant Terraform and commits to the app's repo. Stage 2: EventBridge detects the commit and triggers the pipeline; CodeBuild runs `terraform plan` and the plan JSON becomes a pipeline artifact. Stage 3: a custom action runs Conftest against the plan JSON — naming, tags, encryption, BPA, TLS bucket policy all checked. Stage 4: for dev the pipeline proceeds automatically; for stg/prd it pauses for a manual approval. Stage 5: the pipeline assumes a cross-account role into the target account and runs `terraform apply`. Everything is logged, everything ties back to the originating commit. The whole run takes a few minutes."
+    },
+    {
+      "layout": "content",
+      "title": "What the Terraform Change Looks Like",
+      "bullets": [
+        "Bucket name: `client-{env}-{app}-data` — validated by OPA",
+        "Mandatory tags populated from product parameters (Environment, Application, Owner, CostCenter, DataClass)",
+        "SSE-KMS encryption attached as a separate resource by the product",
+        "Block Public Access and TLS-only bucket policy also attached by the product",
+        "Developer supplied parameters — they didn't author raw HCL"
+      ],
+      "speaker_notes": "Important point: the developer did NOT write Terraform from scratch. They launched the Service Catalog S3 product and supplied parameters (environment, app name, owner, cost centre) — the product generated compliant HCL. The aws_s3_bucket resource holds the name and tags; encryption, BPA, and TLS-only policy are attached as separate Terraform resources by the product. The OPA stage in the pipeline still validates all of this — the product and the policy are belt and braces, both enforcing the same standards from different angles. If you want to see the raw HCL it'll be in your repo after launch."
+    },
+    {
+      "layout": "code",
+      "title": "Reading the CodeBuild Log",
+      "code": "[Container] Running command terraform plan -out=tfplan\nTerraform will perform the following actions:\n\n  # aws_s3_bucket.data_bucket will be created\n  + resource \"aws_s3_bucket\" \"data_bucket\" {\n      + bucket = \"client-dev-paymentsapi-data\"\n      + tags = {\n          + \"Application\" = \"paymentsapi\"\n          + \"CostCenter\"  = \"CC-4421\"\n        }\n    }\n\nPlan: 3 to add, 0 to change, 0 to destroy.\n\n[Container] Running command conftest test tfplan.json\nPASS - main - bucket naming convention valid\nPASS - main - encryption configured\nPASS - main - mandatory tags present",
+      "speaker_notes": "Click into the build stage in the pipeline console — you land on the CodeBuild log. Two things happen here in sequence. First, `terraform plan` produces the human-readable preview of what would change. Then `conftest test` runs the OPA policies against the plan JSON and prints PASS or FAIL lines. When a stage fails, the FAIL line names the rule that fired and usually the resource that violated it. We'll go deep on diagnosing these failures in Module 8."
+    },
+    {
+      "layout": "title_only",
+      "title": "Standards in the S3 Product",
+      "table": {
+        "headers": ["Standard", "How the product enforces it"],
+        "rows": [
+          ["Encryption", "SSE-KMS with a customer-managed CMK"],
+          ["Public access", "Block Public Access — all four settings on"],
+          ["Transport", "Bucket policy denies any non-TLS request"],
+          ["Tagging", "Environment, Application, Owner, CostCenter, DataClass required"],
+          ["Naming", "client-{env}-{app}-{purpose} — also validated by OPA"]
+        ]
+      },
+      "speaker_notes": "The reason the walk-through is clean is that the Service Catalog product ships the organisation's standards by default — they're not parameters developers can override. SSE-KMS with a customer-managed CMK means the key policy controls who can decrypt and CloudTrail logs every use. Block Public Access has all four settings on as a second line of defence. The default-deny TLS bucket policy uses the aws:SecureTransport condition to reject any non-HTTPS request. Mandatory tags populate from product parameters. Everything in this list also has a corresponding OPA rule — Service Catalog is the first guardrail, OPA is the backstop."
+    },
+    {
+      "layout": "title_only",
+      "title": "Forward References",
+      "table": {
+        "headers": ["Topic", "Where covered"],
+        "rows": [
+          ["OPA failure anatomy and remediation", "Module 6 + Lab 3"],
+          ["Tag-policy enforcement at the org level", "Module 7"],
+          ["Systematic pipeline troubleshooting", "Module 8"]
+        ]
+      },
+      "speaker_notes": "The takeaway from this module is that pipeline runs are *legible* — every stage has an artifact, a log, and a clear success/fail signal. When something breaks, the pipeline tells you where. Module 6 deep-dives OPA — how rules work and how to write one. Lab 3 has you fix three deliberate OPA failures against S3 Terraform, exactly the kind of failure shown in the build-log slide. Module 7 covers the tag-policy and SCP layers that sit above OPA. Module 8 covers systematic troubleshooting — which stage failed and which layer to inspect first."
+    },
+    {
+      "layout": "summary",
+      "title": "Chapter Summary",
+      "bullets": [
+        "In this chapter, you have:",
+        "Traced an S3 change from commit through OPA, approval, and deploy",
+        "Located the artifacts each stage produces (plan, OPA result, build log)",
+        "Identified the standards the Service Catalog S3 product ships by default",
+        "Previewed the failure scenarios deep-dived in Modules 6–8"
+      ]
+    }
+  ]
+}
