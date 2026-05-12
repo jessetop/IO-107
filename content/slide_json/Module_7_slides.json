@@ -179,7 +179,7 @@
         {
           "header": "Build Stage",
           "bullets": [
-            "OPA: Conftest FAIL — missing tags, naming, encryption",
+            "Conftest FAIL: tags, naming, encryption",
             "Fix in Terraform, push, re-run pipeline"
           ],
           "position": "left"
@@ -189,7 +189,7 @@
           "bullets": [
             "AccessDenied + 'service control policy' = SCP",
             "AccessDenied + 'not authorized' = IAM",
-            "Tag-policy violation: invalid value (not just missing)"
+            "Tag-policy: invalid value (not just missing)"
           ],
           "position": "right"
         }

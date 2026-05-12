@@ -67,7 +67,7 @@
             "CloudTrail event"
           ],
           [
-            "Deploy — AccessDenied + 'not authorized'",
+            "Deploy — 'not authorized'",
             "IAM",
             "Pipeline role policy"
           ],
@@ -105,8 +105,8 @@
           "header": "SCP Region Denial",
           "bullets": [
             "Stage: deploy",
-            "Error: AccessDenied + 'service control policy'",
-            "Region in error message is not us-east-1 or us-west-2",
+            "Error: AccessDenied + 'service control'",
+            "Region not us-east-1 or us-west-2",
             "Fix: change region or request SCP exception"
           ],
           "position": "left"
@@ -173,7 +173,7 @@
           ],
           [
             "SA Annotation",
-            "kubectl get sa -o yaml — eks.amazonaws.com/role-arn present?"
+            "kubectl get sa -o yaml — role-arn annotation set?"
           ],
           [
             "Trust Policy",
@@ -214,7 +214,7 @@
         "rows": [
           [
             "When to Request",
-            "Guardrail blocks legitimate change — not for skipping security"
+            "Blocks legitimate change, not security bypass"
           ],
           [
             "Document Evidence",
@@ -226,7 +226,7 @@
           ],
           [
             "Submit and Track",
-            "Via the enterprise ticketing system to security/platform team"
+            "Enterprise ticket to security/platform team"
           ],
           [
             "Outcomes",
@@ -255,10 +255,10 @@
         {
           "header": "You Can Now",
           "bullets": [
-            "Trace a Terraform commit through Jenkins, CodePipeline, OPA, deploy",
-            "Read CodeBuild logs and identify the failed stage",
-            "Recognise OPA, SCP, tag-policy, and IRSA signatures",
-            "Deploy EKS, Lambda, and Aurora Blue/Green via pipeline"
+            "Trace commits through pipeline stages",
+            "Read CodeBuild logs to find the failed stage",
+            "Spot OPA, SCP, tag-policy, IRSA signatures",
+            "Deploy EKS, Lambda, Aurora via pipeline"
           ],
           "position": "left"
         },
@@ -266,9 +266,9 @@
           "header": "Where to Go Next",
           "bullets": [
             "Internal pipeline runbooks (linked in wiki)",
-            "OPA policy repository — read the rules that block you",
+            "OPA policy repo — read rules that block you",
             "Platform team channel for exception requests",
-            "Service Catalog browser for approved Terraform products"
+            "Service Catalog browser — approved products"
           ],
           "position": "right"
         }

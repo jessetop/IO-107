@@ -180,7 +180,7 @@
         {
           "header": "kubectl apply",
           "bullets": [
-            "Direct manifest deployment — no charts, no releases",
+            "Direct deploy — no charts, no releases",
             "Simpler than Helm for straightforward apps",
             "Good for teams new to Kubernetes"
           ],
@@ -191,7 +191,7 @@
           "bullets": [
             "base/ holds shared manifests",
             "overlays/dev|stg|prd/ patch the base",
-            "Change namespace, replicas, image tag, resources"
+            "Patches namespace, replicas, image tag"
           ],
           "position": "right"
         }
@@ -333,7 +333,7 @@
           "header": "Probes do the real work",
           "bullets": [
             "Readiness — pod gets traffic only when ready",
-            "Liveness — Kubernetes restarts unresponsive pods",
+            "Liveness — restarts unresponsive pods",
             "Both required by OPA policy"
           ],
           "position": "right"

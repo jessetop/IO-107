@@ -80,12 +80,11 @@
       "table": {
         "headers": ["Step", "What happens"],
         "rows": [
-          ["1. Launch product", "Developer picks a Service Catalog product + parameters"],
-          ["2. Expand to Terraform", "Product generates compliant HCL committed to the app's repo"],
-          ["3. Pipeline picks up commit", "Build runs `terraform plan` and produces artifact"],
-          ["4. OPA validates plan", "Naming, tags, encryption, network rules checked"],
-          ["5. Approval (stg/prd)", "Human approves in CodePipeline / Jenkins / CloudBees"],
-          ["6. Deploy", "Cross-account role assumed; `terraform apply` lands the change"]
+          ["1. Launch product", "Developer picks Service Catalog product + parameters"],
+          ["2. Expand to Terraform", "Product generates compliant HCL into the app's repo"],
+          ["3. Pipeline plans and validates", "Build runs `terraform plan`; OPA checks rules"],
+          ["4. Approval (stg/prd)", "Human approves in CodePipeline / Jenkins / CloudBees"],
+          ["5. Deploy", "Cross-account role assumed; `terraform apply` runs"]
         ]
       },
       "speaker_notes": "Walk this top to bottom. The developer never types raw Terraform from scratch — they parameterise an approved product. The pipeline picks up the resulting commit, plans, validates, gates, and deploys. Cross-account role assumption is how the pipeline (running in a shared tools account) can land changes in dev/stg/prd accounts without persistent credentials. We'll spend Module 6 on the OPA step and Module 7 on what the cross-account / SCP layer looks like."
@@ -110,10 +109,10 @@
       "table": {
         "headers": ["Tool", "Role in the pipeline"],
         "rows": [
-          ["Jenkins", "Long-standing CI engine — builds, tests, triggers downstream"],
-          ["CloudBees", "Enterprise Jenkins — central RBAC, audit, shared libraries"],
-          ["AWS CodePipeline", "AWS-native orchestrator for cloud-native and newer workloads"],
-          ["AWS CodeDeploy", "Executes the deploy step — traffic shifting, blue/green, in-place"]
+          ["Jenkins", "Long-standing CI engine — builds, tests, triggers"],
+          ["CloudBees", "Enterprise Jenkins — RBAC, audit, shared libraries"],
+          ["AWS CodePipeline", "AWS-native orchestrator for newer cloud workloads"],
+          ["AWS CodeDeploy", "Deploy step — traffic shifting, blue/green, in-place"]
         ]
       },
       "speaker_notes": "The enterprise CI/CD platform doesn't use one CI/CD tool — it uses a mix. Jenkins has been the workhorse for years and runs many existing pipelines. CloudBees is the enterprise Jenkins distribution that adds RBAC, audit, and shared libraries — that's the central control plane the platform team manages. AWS CodePipeline is the AWS-native orchestrator newer EKS and Lambda workloads tend to use. AWS CodeDeploy is the deployment executor — handling Lambda alias traffic shifting, EC2 rolling updates, ECS blue/green. We focus on the AWS-native path today because that's where modernisation is happening, but you'll encounter Jenkins/CloudBees pipelines too. You don't need to administer any of these — just know which one you're looking at when something fails."
@@ -139,7 +138,7 @@
           ["Managed container", "Runs your commands in a clean, reproducible env"],
           ["VPC support", "Joins your VPC to reach private EKS / Aurora resources"],
           ["CloudWatch Logs", "All stdout/stderr captured — start troubleshooting here"],
-          ["Artifacts", "Terraform plan, Docker image, Lambda zip handed to next stage"]
+          ["Artifacts", "Terraform plan, Docker image, Lambda zip to next"]
         ]
       },
       "speaker_notes": "CodeBuild is where execution happens. buildspec.yml defines phases — install, pre_build, build, post_build — each running commands in sequence in a container. Critical capability: CodeBuild can join your VPC, essential for reaching private EKS clusters or running Aurora migrations against private subnets. All output goes to CloudWatch Logs — that's where you start troubleshooting when something fails. Artifacts from build (Terraform plan, container image, Lambda zip) are handed to the next pipeline stage in S3."
@@ -154,7 +153,7 @@
           ["2. Build", "Plan / compile / package", "terraform plan, docker build"],
           ["3. Policy Validation", "OPA evaluates plan", "Block on policy failure"],
           ["4. Approval (stg/prd)", "Human review gate", "Manual approve / reject"],
-          ["5. Deploy", "Apply to target", "terraform apply, helm upgrade, sam deploy"]
+          ["5. Deploy", "Apply to target", "tf apply, helm upgrade, sam deploy"]
         ]
       },
       "speaker_notes": "Walk through each stage. Source triggers on commit. Build runs terraform plan for infra or compiles code for apps. Policy validation is where OPA evaluates the plan against the rules — we spend all of Module 6 on this. Approval is the manual gate for stg/prd. Deploy is where it actually happens. A failure at any stage stops the pipeline immediately — you don't waste approval cycles on a change that failed OPA, and you don't waste deploy windows on a change that failed the build."

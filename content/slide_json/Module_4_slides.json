@@ -118,9 +118,9 @@
         {
           "header": "Bypass risks",
           "bullets": [
-            "Unqualified function ARN invokes skip alias weights",
-            "Explicit :$LATEST invokes go straight to newest code",
-            "AuthType: NONE on Function URLs blocked by OPA"
+            "Unqualified ARN invokes skip alias weights",
+            "Explicit :$LATEST invokes hit newest code",
+            "AuthType: NONE on Function URLs blocked"
           ],
           "position": "left"
         },
@@ -128,7 +128,7 @@
           "header": "Other limits",
           "bullets": [
             "ZIP + layers must stay under 250 MB total",
-            "Need bigger? Container image packaging (up to 10 GB)",
+            "Need bigger? Container images (up to 10 GB)",
             "CAPABILITY_IAM acknowledges, does not grant"
           ],
           "position": "right"

@@ -2,7 +2,7 @@
 
 Source-of-truth for the slides + Google Docs that hold the lecture and lab content.
 
-_Last regenerated: 2026-05-12 (post de-`[Client]` pass)_
+_Last regenerated: 2026-05-12 (post title_only length audit fixes — 36 cell/bullet trims across Mods 1, 3, 4, 5, 7, 8)_
 
 ---
 
@@ -10,14 +10,14 @@ _Last regenerated: 2026-05-12 (post de-`[Client]` pass)_
 
 | Mod | Title | Slides | Min | URL |
 |---|---|---|---|---|
-| 1 | Pipeline Architecture & Service Catalog | 15 | 30 | https://docs.google.com/presentation/d/13K8-Zm8wxFsqiKpfM209ySqnTFhksyvuoh3LtNUREHY/edit |
+| 1 | Pipeline Architecture & Service Catalog | 15 | 30 | https://docs.google.com/presentation/d/17tDtcDnmwC9UAiR4oWn74dD2F4G46ZDBlOgGLjDJd8g/edit |
 | 2 | Anatomy of a Pipeline Run — Using S3 | 8 | 15 | https://docs.google.com/presentation/d/10oi_Hb3h8_umke2FrsaDzYM1hJlqikI3x2vowIhyY7c/edit |
-| 3 | EKS Deployment Pipelines | 20 | 40 | https://docs.google.com/presentation/d/1Z4HTbXhkRKIXID2Ry9Qc1IFf5TPiSgd0DBJ4eupMOU4/edit |
-| 4 | Lambda Deployment Pipelines | 10 | 20 | https://docs.google.com/presentation/d/1FNXhkSLf3CvnWnUV7ltjZUv-tcXDlJhlKT0lX3l0UD8/edit |
-| 5 | Aurora Schema Migrations via Pipelines | 10 | 20 | https://docs.google.com/presentation/d/1o92_K9Z8pLG-5Y4YCFt9Gel39dJdiWuEG161WVZ4HZc/edit |
+| 3 | EKS Deployment Pipelines | 20 | 40 | https://docs.google.com/presentation/d/1g9r0D1pZXGl4_2FKOuMSAx0DKXYpN3VLOw0NI0wUNdk/edit |
+| 4 | Lambda Deployment Pipelines | 10 | 20 | https://docs.google.com/presentation/d/1X2nUGd6aV6BFBih9NvxvF0XFAzyl92Ug5DIy1wbYNFc/edit |
+| 5 | Aurora Schema Migrations via Pipelines | 10 | 20 | https://docs.google.com/presentation/d/1DT_QSG4YtEh4BAH0V4h2zDYIoC1O2L1WBYXnorFHIig/edit |
 | 6 | Policy-as-Code with OPA | 16 | 30 | https://docs.google.com/presentation/d/1EesUnsMO_TM63IvfeLIl-IDRXiNKZ5Adb2S2L5yP-Sg/edit |
-| 7 | SCPs, Tagging Guardrails and AWS Config Rules | 12 | 25 | https://docs.google.com/presentation/d/1sq8_OQ4wsO3gSR563YsUojdheqrdA-SS09ZV97bGFbw/edit |
-| 8 | Troubleshooting and Course Wrap-up | 15 | 30 | https://docs.google.com/presentation/d/1xNakAOsyHbwbxXBcl2AOIeDLqIL9-Ymew4ebzTduwSQ/edit |
+| 7 | SCPs, Tagging Guardrails and AWS Config Rules | 12 | 25 | https://docs.google.com/presentation/d/1ys4UGPSPTCmYFrqqqnZTpqtLJKQ3ptge5v7t9JZxdy8/edit |
+| 8 | Troubleshooting and Course Wrap-up | 15 | 30 | https://docs.google.com/presentation/d/1Rp9NF4k2hpKBTEtRyFZErU1eyL3SuKvm-xnjxNy2CeQ/edit |
 
 ---
 
@@ -44,6 +44,6 @@ _Last regenerated: 2026-05-12 (post de-`[Client]` pass)_
 
 ---
 
-## Course total
+**Audit status:** All 8 decks PASS style + overflow + native-layout audits (including the new `title_only` table/cards/callout_boxes length rules).
 
-**390 min content (6.5 hr)** — fits 8-hr classroom day with 1 hr lunch + 2× 15 min breaks.
+**Course total: 390 min content (6.5 hr).**

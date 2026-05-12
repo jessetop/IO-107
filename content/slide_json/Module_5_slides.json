@@ -66,7 +66,7 @@
           "header": "Infrastructure side",
           "bullets": [
             "Terraform changes the RDS/Aurora cluster",
-            "Pipeline picks it up: plan, OPA, approval, apply",
+            "Pipeline runs: plan, OPA, approval, apply",
             "Engine version, parameter group, topology"
           ],
           "position": "left"
