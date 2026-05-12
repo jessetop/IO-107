@@ -30,11 +30,11 @@
       "table": {
         "headers": ["Stage", "What it does", "Where the output lives"],
         "rows": [
-          ["1. Commit", "Dev launches S3 Service Catalog product → Terraform commit", "App Git repo"],
-          ["2. Build", "CodeBuild runs `terraform plan`, saves plan JSON", "CloudWatch Logs + S3 artifact"],
-          ["3. OPA validation", "Conftest checks naming, tags, encryption, BPA, TLS", "Build log: PASS / FAIL lines"],
+          ["1. Commit", "Launch S3 product, commit Terraform", "App Git repo"],
+          ["2. Build", "CodeBuild runs `terraform plan`", "CloudWatch Logs + S3 artifact"],
+          ["3. OPA validation", "Conftest checks naming/tags/encryption", "Build log: PASS / FAIL lines"],
           ["4. Approval (stg/prd)", "Human reviews plan, clicks approve", "Pipeline action history"],
-          ["5. Deploy", "Cross-account role assumed; `terraform apply`", "CloudWatch Logs + AWS account"]
+          ["5. Deploy", "Cross-account `terraform apply`", "CloudWatch Logs + AWS account"]
         ]
       },
       "speaker_notes": "Walk through this top to bottom. Stage 1: developer launches the Service Catalog S3 product with parameters (env, app name, owner, cost centre) — the product expands to compliant Terraform and commits to the app's repo. Stage 2: EventBridge detects the commit and triggers the pipeline; CodeBuild runs `terraform plan` and the plan JSON becomes a pipeline artifact. Stage 3: a custom action runs Conftest against the plan JSON — naming, tags, encryption, BPA, TLS bucket policy all checked. Stage 4: for dev the pipeline proceeds automatically; for stg/prd it pauses for a manual approval. Stage 5: the pipeline assumes a cross-account role into the target account and runs `terraform apply`. Everything is logged, everything ties back to the originating commit. The whole run takes a few minutes."
@@ -66,7 +66,7 @@
           ["Encryption", "SSE-KMS with a customer-managed CMK"],
           ["Public access", "Block Public Access — all four settings on"],
           ["Transport", "Bucket policy denies any non-TLS request"],
-          ["Tagging", "Environment, Application, Owner, CostCenter, DataClass required"],
+          ["Tagging", "Env, App, Owner, CostCenter, DataClass required"],
           ["Naming", "client-{env}-{app}-{purpose} — also validated by OPA"]
         ]
       },

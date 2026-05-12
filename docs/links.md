@@ -11,7 +11,7 @@ _Last regenerated: 2026-05-12 (post title_only length audit fixes — 36 cell/bu
 | Mod | Title | Slides | Min | URL |
 |---|---|---|---|---|
 | 1 | Pipeline Architecture & Service Catalog | 15 | 30 | https://docs.google.com/presentation/d/1S8MPkJZSRaiQq9z7c5Z01zjXpOVI_a-FIW9TkrCxa7c/edit |
-| 2 | Anatomy of a Pipeline Run — Using S3 | 8 | 15 | https://docs.google.com/presentation/d/10oi_Hb3h8_umke2FrsaDzYM1hJlqikI3x2vowIhyY7c/edit |
+| 2 | Anatomy of a Pipeline Run — Using S3 | 8 | 15 | https://docs.google.com/presentation/d/1HlKJ7gkJSfpbmbG_-G7_Zm2GMjP11lfGNMlbArEI-h0/edit |
 | 3 | EKS Deployment Pipelines | 20 | 40 | https://docs.google.com/presentation/d/1g9r0D1pZXGl4_2FKOuMSAx0DKXYpN3VLOw0NI0wUNdk/edit |
 | 4 | Lambda Deployment Pipelines | 10 | 20 | https://docs.google.com/presentation/d/1X2nUGd6aV6BFBih9NvxvF0XFAzyl92Ug5DIy1wbYNFc/edit |
 | 5 | Aurora Schema Migrations via Pipelines | 10 | 20 | https://docs.google.com/presentation/d/1DT_QSG4YtEh4BAH0V4h2zDYIoC1O2L1WBYXnorFHIig/edit |
