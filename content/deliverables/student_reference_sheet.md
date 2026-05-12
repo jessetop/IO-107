@@ -318,7 +318,7 @@ All conditions inside a rule body use AND logic — every line must be true for 
 | Term | Definition |
 |---|---|
 | **Service Catalog product** | An AWS Service Catalog item that emits pre-approved Terraform for standard resources (S3 bucket, EKS app, Lambda function, Aurora cluster). The Terraform you commit to Git in the standard flow comes from launching one of these. |
-| **AWS CodePipeline** | The AWS-native pipeline orchestrator. One of the orchestrators in the enterprise mix (alongside Jenkins / CloudBees). |
+| **AWS CodePipeline** | Managed CI/CD pipeline service from AWS. One of the orchestrators in the enterprise mix (alongside Jenkins / CloudBees). |
 | **AWS CodeBuild** | The build executor — runs `terraform plan / apply`, `helm upgrade`, `sam build / deploy`, `conftest test`, etc., per `buildspec.yml`. Output streams to CloudWatch Logs. |
 | **AWS CodeDeploy** | The deployment engine that performs Lambda alias traffic shifting under SAM's `DeploymentPreference`. You do not configure it directly; SAM generates the CodeDeploy resources. |
 | **IRSA** | IAM Roles for Service Accounts. Binds a Kubernetes ServiceAccount to an IAM role via the EKS cluster's OIDC provider so pods get short-lived AWS credentials without baked-in keys. |

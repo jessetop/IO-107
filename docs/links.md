@@ -10,7 +10,7 @@ _Last regenerated: 2026-05-12 (post title_only length audit fixes — 36 cell/bu
 
 | Mod | Title | Slides | Min | URL |
 |---|---|---|---|---|
-| 1 | Pipeline Architecture & Service Catalog | 15 | 30 | https://docs.google.com/presentation/d/17tDtcDnmwC9UAiR4oWn74dD2F4G46ZDBlOgGLjDJd8g/edit |
+| 1 | Pipeline Architecture & Service Catalog | 15 | 30 | https://docs.google.com/presentation/d/1S8MPkJZSRaiQq9z7c5Z01zjXpOVI_a-FIW9TkrCxa7c/edit |
 | 2 | Anatomy of a Pipeline Run — Using S3 | 8 | 15 | https://docs.google.com/presentation/d/10oi_Hb3h8_umke2FrsaDzYM1hJlqikI3x2vowIhyY7c/edit |
 | 3 | EKS Deployment Pipelines | 20 | 40 | https://docs.google.com/presentation/d/1g9r0D1pZXGl4_2FKOuMSAx0DKXYpN3VLOw0NI0wUNdk/edit |
 | 4 | Lambda Deployment Pipelines | 10 | 20 | https://docs.google.com/presentation/d/1X2nUGd6aV6BFBih9NvxvF0XFAzyl92Ug5DIy1wbYNFc/edit |
@@ -39,7 +39,7 @@ _Last regenerated: 2026-05-12 (post title_only length audit fixes — 36 cell/bu
 | Facilitator Guide | https://docs.google.com/document/d/1p-ciwc012_JwOKeO-SgsJl0Fx6vHo_WmLS-S4SjeD6A/edit |
 | Knowledge Check Bank | https://docs.google.com/document/d/1UAy5M0irh1vp2wWAloVX4twAgo00HdD9WqvzFk0yO6w/edit |
 | Pre-Course Assessment | https://docs.google.com/document/d/1L5tfdSrVjenOhcHfGZ13Y1gNE8MT9J4lHV13S9WpYS8/edit |
-| Student Reference Sheet | https://docs.google.com/document/d/1UEcetHtxK6ih_SvT1IH_tW3HNo7wEWjkS6BwV1nBfS0/edit |
+| Student Reference Sheet | https://docs.google.com/document/d/1NzNqohH4-O0dbWu2P9vRYAB31ECDCkXl_is-hsPz5qI/edit |
 | Marketing One-Pager | https://docs.google.com/document/d/1vYH-04jn1la-KoU-kqA5-pHiVsM8ZBbimPygeFc0VEw/edit |
 
 ---

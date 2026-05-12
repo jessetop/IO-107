@@ -73,20 +73,20 @@ Why this matters: by the time your change reaches the policy-validation stage, i
 "Now the orchestration side. The enterprise CI/CD platform doesn't use one CI/CD tool — it uses a mix, and which tool drives a given pipeline depends on the workload's history and team. You don't need to administer any of these. You need to know which one you're looking at when something fails, and what each one does at the orchestration level."
 
 [SLIDE: Pipeline Tool Mix]
-- Jenkins: long-standing CI/CD engine for many workloads — builds, tests, triggers downstream
-- CloudBees: enterprise Jenkins distribution — central pipelines, RBAC, audit, shared libraries
-- AWS CodePipeline: AWS-native orchestrator for cloud-native and newer workloads
-- AWS CodeDeploy: handles the deployment step itself — blue/green, in-place, traffic shifting
+- Jenkins: open-source CI/CD automation server (jenkins.io) — builds, tests, triggers downstream
+- CloudBees: commercial Jenkins distribution — central pipelines, RBAC, audit, shared libraries
+- AWS CodePipeline: managed CI/CD pipeline service from AWS
+- AWS CodeDeploy: managed deployment service — blue/green, in-place, traffic shifting
 
-"Jenkins has been the workhorse for years. Many existing pipelines run on Jenkins jobs that build artifacts, run unit tests, and call out to AWS for the deploy.
+"Jenkins has been in use here for years. Many existing pipelines are Jenkins jobs that build artifacts, run unit tests, and call out to AWS for the deploy.
 
-CloudBees is the enterprise distribution of Jenkins that runs centrally — it adds RBAC, audit logging, shared libraries, and the central control plane that lets the platform team manage thousands of Jenkins pipelines.
+CloudBees is the commercial distribution of Jenkins that runs centrally — it adds RBAC, audit logging, shared libraries, and the central control plane that lets the platform team manage many Jenkins pipelines.
 
-AWS CodePipeline is the AWS-native orchestrator. Newer cloud-native workloads — especially EKS and Lambda — increasingly run on CodePipeline because it integrates directly with CodeBuild, CodeDeploy, EventBridge, and IAM.
+AWS CodePipeline is the managed CI/CD pipeline service from AWS. Newer EKS and Lambda workloads tend to run on CodePipeline because it integrates directly with CodeBuild, CodeDeploy, EventBridge, and IAM.
 
-AWS CodeDeploy is the deployment executor. Where CodePipeline says 'now deploy', CodeDeploy actually performs the deploy — handling alias-based traffic shifting for Lambda, rolling updates for EC2, and blue/green for ECS or Lambda. We focus on the AWS-native path in this course because that's where the modernisation work is happening, but you'll encounter Jenkins/CloudBees pipelines too."
+AWS CodeDeploy is the managed deployment service. Where CodePipeline says 'now deploy', CodeDeploy actually performs the deploy — handling alias-based traffic shifting for Lambda, rolling updates for EC2, and blue/green for ECS or Lambda. We focus on the AWS service path in this course because that's where new EKS and Lambda work tends to land, but you'll encounter Jenkins/CloudBees pipelines too."
 
-[SLIDE: AWS CodePipeline — the AWS-Native Orchestrator]
+[SLIDE: AWS CodePipeline — Managed CI/CD Pipeline Service]
 - Event-driven: Amazon EventBridge triggers pipeline on a Git change
 - Stages contain actions; actions produce artifacts consumed by later stages
 - Built-in execution history and audit trail
@@ -132,7 +132,7 @@ Lambda is the serverless target. Module 4 covers SAM, versioning, aliases, and C
 
 Aurora and RDS are our relational databases. Module 5 covers schema migrations through the pipeline and Aurora Blue/Green deployment driven by Terraform — which Lab 4 exercises.
 
-One acknowledgement: EC2 still exists for legacy workloads, and we are actively migrating those to EKS or Lambda. This course concentrates on the cloud-native targets because that's where new work is heading, but if you support a legacy EC2 workload, the same pipeline mechanics apply — CodeDeploy or Jenkins handles the EC2 deploy step instead of Helm or SAM."
+One acknowledgement: EC2 still exists for existing workloads, and we are actively migrating those to EKS or Lambda. This course concentrates on EKS and Lambda because that's where new work is heading, but if you support an EC2 workload, the same pipeline mechanics apply — CodeDeploy or Jenkins handles the EC2 deploy step instead of Helm or SAM."
 
 ---
 
@@ -158,7 +158,7 @@ One acknowledgement: EC2 still exists for legacy workloads, and we are actively 
 
 **Common Questions:**
 - "Can I write my own Terraform outside Service Catalog?" — Only via exception request; default is no
-- "Why both Jenkins and CodePipeline?" — Legacy + modernisation; new cloud-native work tends to land on CodePipeline
+- "Why both Jenkins and CodePipeline?" — Existing pipelines on Jenkins; new EKS/Lambda work tends to land on CodePipeline
 - "Can I deploy manually for emergencies?" — Break-glass procedures exist but are heavily audited; covered briefly in Module 8
 
 **Timing Notes:**

@@ -109,13 +109,13 @@
       "table": {
         "headers": ["Tool", "Role in the pipeline"],
         "rows": [
-          ["Jenkins", "Long-standing CI engine — builds, tests, triggers"],
-          ["CloudBees", "Enterprise Jenkins — RBAC, audit, shared libraries"],
-          ["AWS CodePipeline", "AWS-native orchestrator for newer cloud workloads"],
-          ["AWS CodeDeploy", "Deploy step — traffic shifting, blue/green, in-place"]
+          ["Jenkins", "Open-source CI/CD automation server"],
+          ["CloudBees", "Commercial Jenkins — RBAC, audit, shared libraries"],
+          ["AWS CodePipeline", "Managed CI/CD pipeline service"],
+          ["AWS CodeDeploy", "Managed deploy service — blue/green, traffic shifts"]
         ]
       },
-      "speaker_notes": "The enterprise CI/CD platform doesn't use one CI/CD tool — it uses a mix. Jenkins has been the workhorse for years and runs many existing pipelines. CloudBees is the enterprise Jenkins distribution that adds RBAC, audit, and shared libraries — that's the central control plane the platform team manages. AWS CodePipeline is the AWS-native orchestrator newer EKS and Lambda workloads tend to use. AWS CodeDeploy is the deployment executor — handling Lambda alias traffic shifting, EC2 rolling updates, ECS blue/green. We focus on the AWS-native path today because that's where modernisation is happening, but you'll encounter Jenkins/CloudBees pipelines too. You don't need to administer any of these — just know which one you're looking at when something fails."
+      "speaker_notes": "The enterprise CI/CD platform doesn't use one CI/CD tool — it uses a mix. Jenkins is the open-source CI/CD automation server (jenkins.io) and runs many existing pipelines. CloudBees is the commercial Jenkins distribution that adds RBAC, audit, and shared libraries — that's the central control plane the platform team manages. AWS CodePipeline is the managed CI/CD pipeline service from AWS — newer EKS and Lambda workloads tend to use it because it integrates directly with CodeBuild, CodeDeploy, EventBridge, and IAM. AWS CodeDeploy is the managed deployment service — it handles Lambda alias traffic shifting, EC2 rolling updates, and ECS / Lambda blue/green. We focus on the AWS service path today because that's where new EKS and Lambda work tends to land, but you'll encounter Jenkins/CloudBees pipelines too. You don't need to administer any of these — just know which one you're looking at when something fails."
     },
     {
       "layout": "content",
