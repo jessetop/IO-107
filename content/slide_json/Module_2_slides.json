@@ -44,7 +44,7 @@
       "title": "What the Terraform Change Looks Like",
       "bullets": [
         "Bucket name: `client-{env}-{app}-data` — validated by OPA",
-        "Mandatory tags populated from product parameters (Environment, Application, Owner, CostCenter, DataClass)",
+        "Mandatory tags: Environment, Application, Owner, CostCenter, DataClass",
         "SSE-KMS encryption attached as a separate resource by the product",
         "Block Public Access and TLS-only bucket policy also attached by the product",
         "Developer supplied parameters — they didn't author raw HCL"
@@ -54,7 +54,7 @@
     {
       "layout": "code",
       "title": "Reading the CodeBuild Log",
-      "code": "[Container] Running command terraform plan -out=tfplan\nTerraform will perform the following actions:\n\n  # aws_s3_bucket.data_bucket will be created\n  + resource \"aws_s3_bucket\" \"data_bucket\" {\n      + bucket = \"client-dev-paymentsapi-data\"\n      + tags = {\n          + \"Application\" = \"paymentsapi\"\n          + \"CostCenter\"  = \"CC-4421\"\n        }\n    }\n\nPlan: 3 to add, 0 to change, 0 to destroy.\n\n[Container] Running command conftest test tfplan.json\nPASS - main - bucket naming convention valid\nPASS - main - encryption configured\nPASS - main - mandatory tags present",
+      "code": "[Container] Running command terraform plan -out=tfplan\nTerraform will perform the following actions:\n  # aws_s3_bucket.data_bucket will be created\n  + resource \"aws_s3_bucket\" \"data_bucket\" {\n      + bucket = \"client-dev-paymentsapi-data\"\n      + tags   = { Application, CostCenter, Owner, ... }\n    }\nPlan: 3 to add, 0 to change, 0 to destroy.\n\n[Container] Running command conftest test tfplan.json\nPASS - main - bucket naming convention valid\nPASS - main - encryption configured\nPASS - main - mandatory tags present",
       "speaker_notes": "Click into the build stage in the pipeline console — you land on the CodeBuild log. Two things happen here in sequence. First, `terraform plan` produces the human-readable preview of what would change. Then `conftest test` runs the OPA policies against the plan JSON and prints PASS or FAIL lines. When a stage fails, the FAIL line names the rule that fired and usually the resource that violated it. We'll go deep on diagnosing these failures in Module 8."
     },
     {

@@ -10,13 +10,13 @@ _Last regenerated: 2026-05-12 (post title_only length audit fixes — 36 cell/bu
 
 | Mod | Title | Slides | Min | URL |
 |---|---|---|---|---|
-| 1 | Pipeline Architecture & Service Catalog | 15 | 30 | https://docs.google.com/presentation/d/1S8MPkJZSRaiQq9z7c5Z01zjXpOVI_a-FIW9TkrCxa7c/edit |
-| 2 | Anatomy of a Pipeline Run — Using S3 | 8 | 15 | https://docs.google.com/presentation/d/1HlKJ7gkJSfpbmbG_-G7_Zm2GMjP11lfGNMlbArEI-h0/edit |
-| 3 | EKS Deployment Pipelines | 20 | 40 | https://docs.google.com/presentation/d/1g9r0D1pZXGl4_2FKOuMSAx0DKXYpN3VLOw0NI0wUNdk/edit |
-| 4 | Lambda Deployment Pipelines | 10 | 20 | https://docs.google.com/presentation/d/1X2nUGd6aV6BFBih9NvxvF0XFAzyl92Ug5DIy1wbYNFc/edit |
-| 5 | Aurora Schema Migrations via Pipelines | 10 | 20 | https://docs.google.com/presentation/d/1DT_QSG4YtEh4BAH0V4h2zDYIoC1O2L1WBYXnorFHIig/edit |
-| 6 | Policy-as-Code with OPA | 16 | 30 | https://docs.google.com/presentation/d/1EesUnsMO_TM63IvfeLIl-IDRXiNKZ5Adb2S2L5yP-Sg/edit |
-| 7 | SCPs, Tagging Guardrails and AWS Config Rules | 12 | 25 | https://docs.google.com/presentation/d/1ys4UGPSPTCmYFrqqqnZTpqtLJKQ3ptge5v7t9JZxdy8/edit |
+| 1 | Pipeline Architecture & Service Catalog | 15 | 30 | https://docs.google.com/presentation/d/1OSOAvY_tOajsd68L3G3b4imqkVZmDSnHN6s1T_ojDBY/edit |
+| 2 | Anatomy of a Pipeline Run — Using S3 | 8 | 15 | https://docs.google.com/presentation/d/1quGoyrbmMwBsLT6uy1cHvTs4uZpzHu74Mk33nYDMh2s/edit |
+| 3 | EKS Deployment Pipelines | 20 | 40 | https://docs.google.com/presentation/d/1AXyLyZs7U-lNiQJLHK6RIKQsZqi4uXnjg2n_wQ5iOnI/edit |
+| 4 | Lambda Deployment Pipelines | 10 | 20 | https://docs.google.com/presentation/d/19rHA8IEJIGEkdMfdfG8fGh42FYzF5ZuEtbQh763n2js/edit |
+| 5 | Aurora Schema Migrations via Pipelines | 10 | 20 | https://docs.google.com/presentation/d/1dMadHvR3YZLUYKtR0Zi8jJqGNhlSGl9EbaPVA4-hv84/edit |
+| 6 | Policy-as-Code with OPA | 16 | 30 | https://docs.google.com/presentation/d/1ADFv7kCk2y4W3BB59YbfhsKbc3QmhJMNHPjW0DTC12c/edit |
+| 7 | SCPs, Tagging Guardrails and AWS Config Rules | 12 | 25 | https://docs.google.com/presentation/d/1YTc4Om4sevxSM4PUM11bnjmAgy9sm5ps8ndxfGUf7P4/edit |
 | 8 | Troubleshooting and Course Wrap-up | 15 | 30 | https://docs.google.com/presentation/d/1Rp9NF4k2hpKBTEtRyFZErU1eyL3SuKvm-xnjxNy2CeQ/edit |
 
 ---

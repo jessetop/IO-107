@@ -18,8 +18,8 @@
       "title": "Chapter Objectives",
       "bullets": [
         "In this chapter, you will:",
-        "Describe how a Terraform change flows from a Service Catalog product through the pipeline to AWS",
-        "Name the orchestration tools — Jenkins, CloudBees, AWS CodePipeline, CodeDeploy — and what each does",
+        "Describe how a Terraform change flows from a Service Catalog product through pipeline to AWS",
+        "Name the orchestration tools — Jenkins, CloudBees, CodePipeline, CodeDeploy — and their roles",
         "Identify the standard pipeline stages and where validation happens",
         "List the primary deployment targets: EKS, Lambda, and Aurora"
       ]
@@ -42,10 +42,10 @@
       "layout": "content",
       "title": "Why Pipeline-Driven",
       "bullets": [
-        "Audit trail: every change ties back to a Git commit, PR review, and pipeline execution",
-        "Consistency: the same approved Terraform produces the same infrastructure every time",
+        "Audit trail: every change ties to a Git commit, PR review, and pipeline run",
+        "Consistency: the same approved Terraform produces the same infrastructure",
         "Approval gates: humans review production changes; the pipeline enforces the gate",
-        "Compliance baked in: encryption, tagging, naming, and network rules checked before deploy"
+        "Compliance baked in: encryption, tagging, naming, network rules pre-checked"
       ],
       "speaker_notes": "Frame this as the audit story — when an auditor or incident-responder asks 'who changed this, when, and who approved it?' we point at the pipeline. Manual console clicks don't give us that. One prerequisite to call out once: everything downstream of `git push` is only as trustworthy as the commit on `main`. The standard pattern requires (a) branch protection with required reviews on `main`, (b) 2FA on every contributor account, and (c) signed commits on production-targeted repos. These source-control controls are out of scope for this course but every diagram we cover today assumes they're in place — pipeline integrity collapses without them."
     },
@@ -191,7 +191,7 @@
       "bullets": [
         "In this chapter, you have:",
         "Described how Service Catalog → Terraform → Git → pipeline → AWS works",
-        "Named the orchestration tools: Jenkins, CloudBees, AWS CodePipeline, AWS CodeDeploy",
+        "Named the orchestration tools: Jenkins, CloudBees, CodePipeline, CodeDeploy",
         "Identified the standard pipeline stages and where OPA, approval, and deploy sit",
         "Listed the primary deployment targets: EKS, Lambda, and Aurora"
       ]

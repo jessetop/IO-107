@@ -114,14 +114,20 @@
     {
       "layout": "code",
       "title": "values.yaml for Environment Configuration",
-      "code": "# values-dev.yaml\nreplicaCount: 1\nimage:\n  repository: 123456789012.dkr.ecr.us-east-1.amazonaws.com/myapp\n  tag: \"1.0.0\"\nresources:\n  limits:\n    cpu: 500m\n    memory: 512Mi\n  requests:\n    cpu: 100m\n    memory: 128Mi\nenvironment: dev\nserviceAccount:\n  annotations:\n    eks.amazonaws.com/role-arn: >-\n      arn:aws:iam::123456789012:role/myapp-dev-role",
+      "code": "# values-dev.yaml\nreplicaCount: 1\nimage:\n  repository: 123456789012.dkr.ecr.us-east-1.amazonaws.com/myapp\n  tag: \"1.0.0\"\nresources:\n  limits:    { cpu: 500m, memory: 512Mi }\n  requests:  { cpu: 100m, memory: 128Mi }\nenvironment: dev\nserviceAccount:\n  annotations:\n    eks.amazonaws.com/role-arn: arn:aws:iam::<acct>:role/app-dev",
       "speaker_notes": "One values file per environment. This is the dev one — smaller replica count, lower resource limits, and a dev-specific IAM role for IRSA (we'll get to IRSA in a few slides). Staging and production would have their own files with more replicas, higher resource limits, and different IAM roles. The pipeline picks the right file based on the target environment, so the same chart deploys differently to dev, stg, and prd without any template duplication."
     },
     {
       "layout": "code",
       "title": "Helm Commands in CodeBuild",
-      "code": "# buildspec.yml\nphases:\n  install:\n    commands:\n      - curl -L \\\n          https://raw.githubusercontent.com/helm/\\\n            helm/main/scripts/get-helm-3 \\\n          | bash\n      - aws eks update-kubeconfig --name $CLUSTER_NAME \\\n        --region $AWS_REGION\n  build:\n    commands:\n      - helm upgrade --install myapp ./charts/myapp \\\n          --namespace $NAMESPACE \\\n          --values ./charts/myapp/values-$ENVIRONMENT.yaml \\\n          --set image.tag=$IMAGE_TAG \\\n          --atomic \\\n          --timeout 10m",
-      "speaker_notes": "Install phase: install Helm and configure kubectl using aws eks update-kubeconfig — this uses CodeBuild's IAM role credentials. Build phase: helm upgrade --install is idempotent (installs if the release does not exist, upgrades if it does). We pass the per-environment values file and override the image tag with the one we built earlier in the pipeline. Two flags matter most. --atomic is the rollback flag — if pods do not become healthy, Helm automatically rolls back. --timeout caps the wait so the build does not hang forever. Production caveat on the install line: piping curl to bash from a public GitHub URL is a teaching shortcut. Real CodeBuild images pin a specific Helm version, pull from an internal mirror, or bake Helm directly into the build image — never trust a public raw GitHub URL at runtime."
+      "code": "# buildspec.yml — install phase\nphases:\n  install:\n    commands:\n      - curl -L \\\n          https://raw.githubusercontent.com/helm/\\\n            helm/main/scripts/get-helm-3 \\\n          | bash\n      - aws eks update-kubeconfig --name $CLUSTER_NAME \\\n        --region $AWS_REGION",
+      "speaker_notes": "Install phase: install Helm and configure kubectl using aws eks update-kubeconfig — this uses CodeBuild's IAM role credentials. Production caveat on the install line: piping curl to bash from a public GitHub URL is a teaching shortcut. Real CodeBuild images pin a specific Helm version, pull from an internal mirror, or bake Helm directly into the build image — never trust a public raw GitHub URL at runtime. Next slide shows the build phase with the actual helm upgrade command."
+    },
+    {
+      "layout": "code",
+      "title": "Helm Commands in CodeBuild (continued)",
+      "code": "# buildspec.yml — build phase\n  build:\n    commands:\n      - helm upgrade --install myapp ./charts/myapp \\\n          --namespace $NAMESPACE \\\n          --values ./charts/myapp/values-$ENVIRONMENT.yaml \\\n          --set image.tag=$IMAGE_TAG \\\n          --atomic \\\n          --timeout 10m",
+      "speaker_notes": "Build phase: helm upgrade --install is idempotent (installs if the release does not exist, upgrades if it does). We pass the per-environment values file and override the image tag with the one we built earlier in the pipeline. Two flags matter most. --atomic is the rollback flag — if pods do not become healthy, Helm automatically rolls back. --timeout caps the wait so the build does not hang forever."
     },
     {
       "layout": "title_only",
@@ -234,7 +240,7 @@
       "title": "The IRSA Problem",
       "bullets": [
         "Pods need AWS credentials to call AWS APIs (S3, SNS, Aurora)",
-        "Old approach 1: EC2 instance profile — every pod on the node gets the same broad permissions",
+        "Old approach 1: EC2 instance profile — every pod on the node shares permissions",
         "Old approach 2: hardcoded credentials — security incident waiting to happen",
         "IRSA: pod-level IAM roles via Kubernetes service accounts",
         "No credentials stored in the pod; uses short-lived projected tokens"
@@ -246,11 +252,10 @@
       "title": "How IRSA Works",
       "bullets": [
         "EKS cluster registers an OIDC identity provider with IAM",
-        "IAM role created with trust policy scoped to that OIDC provider",
+        "IAM role trust policy scoped to that OIDC provider",
         "Trust condition: specific namespace + service account only",
-        "Kubernetes service account is annotated with the IAM role ARN",
-        "Pod uses the service account; IRSA admission webhook injects the projected token",
-        "AWS SDKs detect the token and assume the role automatically"
+        "Service account is annotated with the IAM role ARN",
+        "IRSA webhook injects projected token; AWS SDKs assume the role"
       ],
       "speaker_notes": "Your EKS cluster has an OIDC identity provider registered with IAM. You create an IAM role that trusts this provider — and critically, the trust policy is scoped to a specific Kubernetes namespace and service account combination, not just 'any pod in this cluster'. You then create a Kubernetes service account and annotate it with the IAM role ARN. When a pod runs with that service account, the IRSA admission webhook injects a projected service-account token into the pod at scheduling time. AWS SDKs detect the token and automatically call sts:AssumeRoleWithWebIdentity to get temporary credentials. Result: tight scoping. Even if someone compromises a different pod in a different namespace, they cannot assume this role — their token will not match the trust policy's namespace/service-account conditions. (We'll show the full trust policy JSON in Lab 1 when you set up IRSA hands-on; for now just remember the model: OIDC provider trust + namespace/SA conditions = pod-scoped permissions.)"
     },
@@ -346,10 +351,10 @@
       "title": "Chapter Summary",
       "bullets": [
         "In this chapter, you have:",
-        "Deployed applications to EKS using Helm charts with --atomic rollback via CodeBuild",
-        "Deployed applications using kubectl apply with Kustomize overlays and server-side dry-run",
+        "Deployed to EKS using Helm charts with --atomic rollback via CodeBuild",
+        "Deployed with kubectl apply, Kustomize overlays, and server-side dry-run",
         "Configured IRSA for pod-scoped, credential-free access to AWS APIs",
-        "Read EKS rollout status, pod health, and readiness/liveness probe output from the pipeline"
+        "Read EKS rollout status, pod health, and probe output from the pipeline"
       ]
     }
   ]

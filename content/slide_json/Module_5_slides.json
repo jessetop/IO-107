@@ -86,7 +86,7 @@
     {
       "layout": "code",
       "title": "Flyway in CodeBuild — The Secrets Manager Pattern",
-      "code": "env:\n  secrets-manager:\n    FLYWAY_URL: \"prod/mydb/url\"\n    FLYWAY_USER: \"prod/mydb/username\"\n    FLYWAY_PASSWORD: \"prod/mydb/password\"\n\nphases:\n  install:\n    commands:\n      - wget -qO- \\\n          https://.../flyway-commandline.tar.gz \\\n          | tar xvz\n  build:\n    commands:\n      - flyway info\n      - flyway migrate\n      - flyway info",
+      "code": "env:\n  secrets-manager:\n    FLYWAY_URL:      \"prod/mydb/url\"\n    FLYWAY_USER:     \"prod/mydb/username\"\n    FLYWAY_PASSWORD: \"prod/mydb/password\"\nphases:\n  install:\n    commands:\n      - wget -qO- https://.../flyway-commandline.tar.gz | tar xvz\n  build:\n    commands:\n      - flyway info\n      - flyway migrate\n      - flyway info",
       "speaker_notes": "This is the only Flyway buildspec slide in the module — and it's the one that matters because it's the security-correct pattern Lab 4 uses end to end. Notice what is NOT on the command line: no -url, no -user, no -password flags. CodeBuild's env.secrets-manager block pulls the values from AWS Secrets Manager at the start of the build and injects them as environment variables. Flyway natively reads FLYWAY_URL, FLYWAY_USER, and FLYWAY_PASSWORD from the environment — no flag mapping needed. Result: the password never appears on a command line. It is not in ps output, it is not in CodeBuild's per-command log captures, it is not in the buildspec file in git. It only exists in the build process's environment block. Compare this to the alternative — pulling secrets with aws secretsmanager get-secret-value, parsing with jq, exporting manually, then passing on the flyway command line. Every step there is a leak risk. env.secrets-manager is shorter AND safer. This is the pattern Lab 4 exercises."
     },
     {
@@ -118,12 +118,11 @@
       "layout": "content",
       "title": "Aurora Blue/Green via Terraform — Lab 4 Preview",
       "bullets": [
-        "Lab 4: you change one Terraform attribute on the Aurora cluster",
+        "Lab 4: change one Terraform attribute on the Aurora cluster",
         "aws_rds_cluster resource gains a blue_green_update block",
-        "Pipeline picks up the Terraform change — plan, OPA, approval, apply",
-        "Aurora creates the green cluster, logical replication keeps it in sync",
-        "Switchover under a minute typically; only proceeds when lag is zero",
-        "You observe blue + green clusters and the switchover in AWS CloudTrail"
+        "Pipeline picks up the change — plan, OPA, approval, apply",
+        "Aurora creates the green cluster; logical replication syncs it",
+        "Switchover typically under a minute; only proceeds when lag is zero"
       ],
       "speaker_notes": "This slide sets up Lab 4. The blue/green pattern is how Aurora handles schema changes that would normally lock tables for minutes or hours — like adding an index to a billion-row table — without taking the application down. Conceptually: Aurora creates a green copy of your production cluster, logical replication keeps green in sync with blue, you apply schema changes to green while blue keeps serving traffic, then you switchover and green becomes the new blue. What makes this *our* pattern is that you do not call the AWS RDS APIs directly. You modify Terraform — specifically the aws_rds_cluster resource gets a blue_green_update block — and commit. The pipeline does the rest: terraform plan, OPA validates the change, approval gate for production, terraform apply. Aurora then orchestrates the green cluster creation, sync, and switchover. One realistic-expectation note: switchover is typically under a minute for low-write workloads, but for write-heavy clusters it can be longer because Aurora only proceeds once replication lag has reached zero. Plan for that window. In Lab 4 you will make this Terraform change yourself and watch the switchover event land in CloudTrail."
     },

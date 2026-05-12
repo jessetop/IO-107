@@ -78,7 +78,7 @@
     {
       "layout": "code",
       "title": "Region Restriction SCP",
-      "code": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [{\n    \"Sid\": \"DenyOutsideApprovedRegions\",\n    \"Effect\": \"Deny\",\n    \"NotAction\": [\n      \"iam:*\", \"cloudfront:*\", \"route53:*\",\n      \"support:*\", \"organizations:*\",\n      \"sts:GetCallerIdentity\"\n    ],\n    \"Resource\": \"*\",\n    \"Condition\": {\n      \"StringNotEquals\": {\n        \"aws:RequestedRegion\": [\"us-east-1\", \"us-west-2\"]\n      }\n    }\n  }]\n}",
+      "code": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [{\n    \"Sid\": \"DenyOutsideApprovedRegions\",\n    \"Effect\": \"Deny\",\n    \"NotAction\": [\n      \"iam:*\", \"cloudfront:*\", \"route53:*\",\n      \"support:*\", \"organizations:*\", \"sts:GetCallerIdentity\"\n    ],\n    \"Resource\": \"*\",\n    \"Condition\": { \"StringNotEquals\": {\n      \"aws:RequestedRegion\": [\"us-east-1\", \"us-west-2\"] }}\n  }]\n}",
       "speaker_notes": "This SCP restricts actions to approved regions -- us-east-1 and us-west-2. Any attempt to create resources in other regions will be denied. This addresses data residency requirements and simplifies our operational footprint. Critical detail: aws:RequestedRegion does NOT evaluate for global services -- IAM, CloudFront, Route 53, Organizations, STS in non-regional mode, AWS Support. Without the NotAction carve-out shown here, this SCP locks the account out of IAM itself and breaks everything. A real region-restriction SCP must include this NotAction list -- iam:*, cloudfront:*, route53:*, support:*, organizations:*, sts:GetCallerIdentity, and a few others. Don't deploy a region SCP without that carve-out."
     },
     {
@@ -96,7 +96,7 @@
     {
       "layout": "code",
       "title": "Root Account Protection SCP",
-      "code": "{\n  \"Sid\": \"ProtectRootAccount\",\n  \"Effect\": \"Deny\",\n  \"Action\": \"*\",\n  \"Resource\": \"*\",\n  \"Condition\": {\n    \"StringLike\": {\n      \"aws:PrincipalArn\": \"arn:aws:iam::*:root\"\n    }\n  },\n  \"NotAction\": [\n    \"iam:CreateVirtualMFADevice\",\n    \"iam:EnableMFADevice\",\n    \"sts:GetSessionToken\"\n  ]\n}",
+      "code": "{\n  \"Sid\": \"ProtectRootAccount\",\n  \"Effect\": \"Deny\",\n  \"Action\": \"*\",\n  \"Resource\": \"*\",\n  \"Condition\": { \"StringLike\": {\n    \"aws:PrincipalArn\": \"arn:aws:iam::*:root\"\n  }},\n  \"NotAction\": [\n    \"iam:CreateVirtualMFADevice\",\n    \"iam:EnableMFADevice\",\n    \"sts:GetSessionToken\"\n  ]\n}",
       "speaker_notes": "The root account is too powerful to use for regular operations. This SCP denies almost all actions for the root user, except setting up MFA. Root should only be used for the handful of account-recovery scenarios that genuinely require it -- closing the account, changing root email, certain billing operations. Day-to-day work happens through federated roles with appropriate scope. If you see root used in CloudTrail, that's an incident signal."
     },
     {
