@@ -6,11 +6,23 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.4"
+    }
   }
 }
 
 provider "aws" {
   region = "us-east-1"
+}
+
+# The Lambda zip is built from src/app.py at plan time so the lab works
+# without a pre-built artifact in the repo.
+data "archive_file" "processor_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/../src"
+  output_path = "${path.module}/processor.zip"
 }
 
 # ---------------------------------------------------------------------------
@@ -52,13 +64,14 @@ resource "aws_s3_bucket" "data_bucket" {
 #   Policy:  policies/tagging.rego
 #   Same four mandatory tags as above.
 resource "aws_lambda_function" "processor" {
-  function_name = "data-processor"
-  runtime       = "python3.11"
-  handler       = "app.handler"
-  timeout       = 600
-  memory_size   = 512
-  filename      = "lambda.zip"
-  role          = "arn:aws:iam::123456789012:role/lab3-lambda-role"
+  function_name    = "data-processor"
+  runtime          = "python3.11"
+  handler          = "app.handler"
+  timeout          = 600
+  memory_size      = 512
+  filename         = data.archive_file.processor_zip.output_path
+  source_code_hash = data.archive_file.processor_zip.output_base64sha256
+  role             = "arn:aws:iam::123456789012:role/lab3-lambda-role"
 
   tags = {
     Name = "Processor"

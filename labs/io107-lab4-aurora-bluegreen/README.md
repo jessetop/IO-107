@@ -33,17 +33,17 @@ destroy it.
 ## Upgrade path — what students actually do
 
 The starting state describes the training cluster **as it exists today**:
-Aurora PostgreSQL 15.4, encrypted, Multi-AZ, with the five mandatory tags,
+Aurora PostgreSQL 16.11, encrypted, Multi-AZ, with the five mandatory tags,
 and **no** `blue_green_update` block. Pushing the repo as-is would fail OPA
 validation, because the engine-version pin policy in `policies/` only allows
-versions `15.5` and `15.6`.
+versions `16.13` and `16.14`.
 
 The lab is the failure-into-success arc:
 
 1. **Inspect.** Read `terraform/aurora_cluster.tf`. Confirm `engine_version
-   = "15.4"` and that the resource has **no** `blue_green_update` block.
+   = "16.11"` and that the resource has **no** `blue_green_update` block.
 2. **Edit `terraform/aurora_cluster.tf`.** Two changes only:
-   - Bump `engine_version` from `"15.4"` to `"15.5"`.
+   - Bump `engine_version` from `"16.11"` to `"16.13"`.
    - Add a `blue_green_update { enabled = true }` block to the
      `aws_rds_cluster.training` resource.
 3. **Commit and push.** AWS CodePipeline triggers automatically:
@@ -51,7 +51,7 @@ The lab is the failure-into-success arc:
    - **Build (plan)** — `terraform init`, `terraform plan -out=tfplan`,
      `terraform show -json tfplan > tfplan.json`.
    - **Validate (OPA)** — `conftest test tfplan.json -p policies/`. With
-     `15.5` this passes; with `15.4` it fails the pin policy.
+     `16.13` this passes; with `16.11` it fails the pin policy.
    - **Approval** — Manual approval gate, because the cluster is a prod-tier
      shared resource. Required by IO-107 Module 1 / Module 5 patterns.
    - **Deploy (apply)** — `terraform apply tfplan`. AWS RDS receives

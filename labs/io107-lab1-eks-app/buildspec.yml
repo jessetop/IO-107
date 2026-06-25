@@ -8,10 +8,9 @@ env:
 
 phases:
   install:
-    runtime-versions:
-      docker: 20
     commands:
-      - curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      # Helm install (training shortcut — production pipelines should use a pre-baked image with Helm pinned).
+      - curl -sSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
       - aws eks update-kubeconfig --name $CLUSTER_NAME --region us-east-1
 
   pre_build:
